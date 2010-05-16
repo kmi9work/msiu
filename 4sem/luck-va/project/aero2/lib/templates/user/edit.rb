@@ -17,11 +17,21 @@
     </tr>
     <tr>
       <th>Пароль:</th>
-      <td><input type = 'text' name = 'item[code]' value = '#{@item[:password]}'></td>
+      <td><input type = 'password' name = 'item[password1]' value = ''></td>
+    </tr>
+    <tr>
+      <th>Повторите пароль:</th>
+      <td><input type = 'password' name = 'item[password2]' value = ''></td>
     </tr>
     <tr>
       <th>Информация:</th>
       <td><input type = 'text' name = 'item[description]' value = '#{@item[:info]}'></td>
+    </tr>
+    <tr>
+      <th>Суперпользователь?</th>
+      <td>
+        #{superuser_select('item[is_super]', @item[:is_super])}
+      </td>
     </tr>
   </tbody>
   <tfoot>

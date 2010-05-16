@@ -6,24 +6,24 @@ class UserController < Controller
         @item = User.new
         params.each do |k, v|
           @item[k] = v[0] if k != 'id' and v != '' and k != 'is_super' and k !~ /password[12]/
-	  if k == 'is_super' 
-	    if v[0] == '1'
-	      @item[:is_super] = true
-	    else
-	      @item[:is_super] = false 
-	    end	
-	  end
+          if k == 'is_super' 
+            if v[0] == '1'
+              @item[:is_super] = true
+            else
+              @item[:is_super] = false 
+            end	
+          end
         end
-	if params['password1'] != params['password2']
-	  @message = 'Пароли не совпадают'
-	else
-	  @item[:password] = params['password2'][0]
+        if params['password1'] != params['password2']
+          @message = 'Пароли не совпадают'
+        else
+          @item[:password] = params['password2'][0]
           if @item.save(@db)
             @message = 'Пользователь успешно создан'
           else
             @message = 'Невозможно создать пользователя'
           end
-	end
+        end
         @link = "controller=User&action=show&id=#{@item[:id]}"
       else
         @header = 'Регистрация нового пользователя'
@@ -36,12 +36,12 @@ class UserController < Controller
       render_template('error')
     end
   end
-  
+
 
   def is_authorized_action?
     false
   end    
-  
+
   def search
     if @cgi.params.has_key?('is_commit')
       params = filter_for_params
@@ -49,7 +49,7 @@ class UserController < Controller
     end
     render_template('search')
   end
-  
+
   def edit
     if !@user.nil?
       if @cgi.params.has_key?('is_commit')
@@ -62,13 +62,27 @@ class UserController < Controller
         end
         @item = User.find_by_id(@db, id)
         params.each do |k, v|
-          @item[k] = v[0] if k != 'id' and v != ''
+          @item[k] = v[0] unless k == 'id' or v == '' or k =~ /password[12]/
         end
-        if @item.save(@db)
-          @message = 'Сделано.'
+        if params['password1'] == '' or params['password2'] == ''
+          if @item.save(@db)
+            @message = 'Изменения внесены'
+          else
+            @message = 'Невозможно сохранить изменения'
+          end
         else
-          @message = 'Ошибка.'
+          unless params['password1'] == params['password2']
+            @message = 'Пароли не совпадают'
+          else
+            @item[:password] = params['password2'][0]
+            if @item.save(@db)
+              @message = 'Изменения внесены'
+            else
+              @message = 'Невозможно сохранить изменения'
+            end
+          end
         end
+        
       else
         if @user[:is_super]
           id = @cgi.params['id'][0] unless @cgi.params['id'][0] == ''

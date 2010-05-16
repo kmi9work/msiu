@@ -13,8 +13,8 @@
 #include <sys/wait.h>
 #include <sys/msg.h>
 
-
-#define FIFO "fifo.0"
+#define MAX_QUEUE 1024
+#define MAXX 2147483647
 
 static struct sembuf iter_lock[1] = {{0, 1, 0}};
 static struct sembuf iter_unlock[1] = {{0, -1, 0}};
@@ -25,6 +25,7 @@ static struct sembuf w_lock[1] = {{2, -1, 0}};
 static struct sembuf w_unlock[1] = {{2, 1, IPC_NOWAIT}};
 static struct sembuf work_start[1] = {{3, 1, IPC_NOWAIT}};
 static struct sembuf work_stop[1] = {{3, -1, IPC_NOWAIT}};
+
 
 volatile sig_atomic_t die = 0;
 
@@ -117,18 +118,17 @@ void op_sem(int semid, struct sembuf *sops){
 void make_step(int type, int m, int num_ms, int msgid, int sem_id){
   int i, j;
   int count;/*part size*/
-  int * warr;
   struct msgbuf{
     long int mtype;
     int mtext[2];
   } buf;
-  warr = (int *) malloc(sizeof(int) * 2);
   buf.mtype = 1;
   switch (type){
   case 1: /*pyramid*/
     count = m/num_ms;
     for(j = num_ms - 1; j >= 0; j--){
       for(i = 0; i < count/2; i++){	
+				while (get_sem_val(sem_id, 0) >= MAX_QUEUE/8 - 1);
        	buf.mtext[0] = i+(num_ms-1-j)*count;
         buf.mtext[1] = m-1 - j*count - i;
         while(1){
@@ -150,6 +150,7 @@ void make_step(int type, int m, int num_ms, int msgid, int sem_id){
     count = m/num_ms;
     for(j = 0; j < num_ms; j++){
       for(i = 0; i < count/2; i++){
+				while (get_sem_val(sem_id, 0) >= MAX_QUEUE/8 - 1);
         buf.mtext[0] = j*count + i;
         buf.mtext[1] = j*count + i + count/2;
         while(1){
@@ -169,6 +170,7 @@ void make_step(int type, int m, int num_ms, int msgid, int sem_id){
     break;
   case 3: /*[ones]*/
     for(i = 0; i < m/2; i++){
+			while (get_sem_val(sem_id, 0) >= MAX_QUEUE/8 - 1);
       buf.mtext[0] = i*2;
       buf.mtext[1] = i*2 + 1;
       while(1){
@@ -188,7 +190,6 @@ void make_step(int type, int m, int num_ms, int msgid, int sem_id){
   default: printf("Make step error.\n"); exit(2);
   }
   op_sem(sem_id, &iter_wait[0]);
-  free(warr);
 }
 
 
@@ -223,7 +224,7 @@ int main(int argc, char ** argv){
   key_t key;
   int *shm_seg, shm_id, sem_id, pid, msgid;
   int i, tmp, count_r;
-  unsigned int nn, n, size;
+  unsigned int nn, n, size, nforks;
   struct sigaction sa;
   struct msgbuf{
     long mtype;
@@ -239,27 +240,30 @@ int main(int argc, char ** argv){
   
   printf("n: "); scanf("%u", &n); 
   if (n < 2){ printf("n must be bigger than 1\n"); _exit(0); }
-  nn = 2;
+	nn = 2;
   while (nn < n){
     nn <<= 1;
   }
-
-  /*-initialize*/
-  if ((key = ftok(argv[0], 'p')) < 0) { perror("ftok"); exit(2); }/*ftok=======*/
+	if ((key = ftok(argv[0], 'p')) < 0) { perror("ftok"); exit(2); }/*ftok=======*/
   size = nn*sizeof(int);
   if ((shm_id = open_seg(key,size)) < 0){ printf("open_seg error\n"); exit(2); }
   if (*(shm_seg = shmat(shm_id, 0, 0)) < 0) { printf("error attaching %d\n",shm_id); exit(2); }
   if ((sem_id = open_sem(key,4)) < 0){ printf("open_sem error\n"); exit(2); }
   
-  srand(key);
-  for(i = 0; i < n; i++){
-    shm_seg[i] = rand() % 100;
-    printf("%d ", shm_seg[i]);
+	for(i = 0; i < n; i++){
+		scanf("%d", shm_seg+i);
   }
+	
   for(; i < nn; i++){
-    shm_seg[i] = 100;
+    shm_seg[i] = MAXX;
   }
   printf("\n");
+	printf("===============\n");
+
+  /*-initialize*/
+  
+  
+  
   
   /*=initialize*/
   if ((msgid = msgget(key, IPC_CREAT | O_RDWR | O_NONBLOCK | 0660)) < 0){
@@ -269,13 +273,14 @@ int main(int argc, char ** argv){
   op_sem(sem_id, &r_unlock[0]);
   op_sem(sem_id, &w_unlock[0]);
 	op_sem(sem_id, &work_start[0]);
-  for(i = 0; i < nn/2; i++){
+	nforks = nn > 64 ? 32 : nn/2;
+  for(i = 0; i < nforks; i++){
     if ((pid = fork()) < 0){ printf("fork %d", i); _exit(2); }
     if (pid == 0){
       while (get_sem_val(sem_id, 3) > 0){
         buf.mtext[0] = 0; buf.mtext[1] = 0;
         op_sem(sem_id, &r_lock[0]);
-       /* printf("%d: start reading msg\n", getpid());*/
+				/*printf("%d: start reading msg\n", getpid());*/
         while(1){
           if ((count_r = msgrcv(msgid, &buf, sizeof(int)*2, 1, IPC_NOWAIT)) < 0){
             if (errno == EINTR){
@@ -291,7 +296,7 @@ int main(int argc, char ** argv){
             break;
           }
         }
-        /*printf("%d: stop reading msg\n", getpid());*/
+       /* printf("%d: stop reading msg\n", getpid());*/
         op_sem(sem_id, &r_unlock[0]);
         if (count_r < 2){
           /*printf("%d: count_r < 2\n", getpid());*/
@@ -316,21 +321,23 @@ int main(int argc, char ** argv){
   
   make_mn(nn, nn, 1, msgid, sem_id);
   op_sem(sem_id, &work_stop[0]);
-  printf("work == 1\n");
-  sleep(30);
   for(i = 0; i < n; i++){
     printf("%d ", shm_seg[i]);
   }
   printf("\n");
 
-  while(die < nn/2);
-  
-  if (msgctl(msgid, IPC_RMID, 0) < 0){
+  while(die < nforks);
+
+	if (msgctl(msgid, IPC_RMID, 0) < 0){
     perror("delete");
     _exit(2);
   }
   detach_seg((char *)shm_seg);
   close_seg(shm_id);
   close_sem(sem_id);
+
+	
+  
+  
   return 0;
 }

@@ -25,7 +25,17 @@ module Helper
     FlightStatus::STATUSES.each do |status, i|
       sum += "<option value = '#{status}' #{status.to_s == selected.to_s ? ' selected' : ''}>#{i}</option>"
     end
-    "<select name='#{name}'" +  sum + 
+    "<select name='#{name}'" +  
+      sum + 
     "</select>"
+  end
+  
+  def superuser_select(name, selected)
+    "
+    <select name='#{name}'> 
+      <option value = '1'#{selected ? ' selected' : ''}>Да</option>
+      <option value = '0'#{selected ? '' : ' selected'}>Нет</option>
+    </select>
+    "
   end
 end

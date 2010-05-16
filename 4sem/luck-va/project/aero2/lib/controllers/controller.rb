@@ -73,7 +73,7 @@ class Controller
   # Формирование ссылки в левом верхнем углу Вход/Выход
   def login_link()
     if @controller == :Auth
-      @login_link_html = '&nbsp;' + render_layout('register_link')
+      @login_link_html = render_layout('login_link') + render_layout('register_link')
     elsif !@user.nil?
       @login_link_html = render_layout('logout_link')
     else

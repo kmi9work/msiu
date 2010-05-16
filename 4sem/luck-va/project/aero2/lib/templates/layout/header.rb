@@ -11,7 +11,7 @@
         <thead>
             <tr>
                 <th>#{@login_link_html}</th>
-                <th>Аэропорт | <a href='aero.rb?controller=User&action=list'>Список пользователей</a> | <a href='aero.rb?controller=User&action=search'>Поиск</a></th>
+                <th><a href='aero.rb?controller=User&action=list'>Список пользователей</a> | <a href='aero.rb?controller=User&action=search'>Поиск</a></th>
             </tr>
          </thead>
          <tbody>
