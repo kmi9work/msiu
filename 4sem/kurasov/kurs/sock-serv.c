@@ -1,5 +1,15 @@
+#include <stdio.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
+
 #define PORTNUM 1500
 #define BUF_SIZE 1024
 void true_exit(int a){
@@ -8,8 +18,8 @@ void true_exit(int a){
 
 int main(){
 	int pid;
-	int size_accept, size, addr_size, count_r;
-  int s, nport = PORTNUM;
+	int size_accept, size, count_r;
+  int s, nport = PORTNUM, client_s, host_s;
   struct sockaddr_in serv_addr, client_addr, host_addr;
 	struct sock_connection{
 		char ver;
@@ -19,12 +29,12 @@ int main(){
 		in_addr_t addr;
 		short port;
 	} bnd, dst;
-	char buf[1024];
-	int fl;
+	unsigned char buf[1024];
+	int fl, i;
 	
   nport = htons((u_short) nport);
   bzero(&serv_addr, sizeof(serv_addr));
-  serv_addr.fin_family = AF_INET;
+  serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
   serv_addr.sin_port = nport;
   
@@ -44,7 +54,7 @@ int main(){
 	while(1){
 		size_accept = sizeof(client_addr);
 		bzero(&client_addr, size_accept);
-    if ((client_s = accept(s, (struct sockaddr *)&client_addr, &size_accept)) < 0) {
+    if ((client_s = accept(s, (struct sockaddr *)&client_addr, (socklen_t *) sizeof(client_addr))) < 0) {
 			if (errno == EINTR){
 				continue;
 			}
@@ -95,7 +105,7 @@ int main(){
 			
 			host_addr.sin_family = AF_INET;
 			host_addr.sin_port = htons(dst.port);
-			host_addr.in_addr.sin_addr = dst.addr;
+			host_addr.sin_addr.s_addr = dst.addr;
 			bnd.ver = 0x05;
 			bnd.rsv = 0x00;
 			bnd.atype = 0x01;
@@ -107,12 +117,18 @@ int main(){
 		  }; 
 			
 			while (1){		  
-				if (connect(host_s, &host_addr, sizeof(host_addr)) < 0){
+				if (connect(host_s, (struct sockaddr*)&host_addr, (socklen_t) sizeof(host_addr)) < 0){
 					switch(errno){
-						case (ENETDOWN || ENETUNREACH) :
+						case ENETDOWN :
 							bnd.cmd = 0x03;
 							break;
-						case (EADDRNOTAVAIL || EHOSTUNREACH) : 
+						case ENETUNREACH :
+							bnd.cmd = 0x03;
+							break;
+						case EADDRNOTAVAIL : 
+							bnd.cmd = 0x04;
+							break;
+						case EHOSTUNREACH :
 							bnd.cmd = 0x04;
 							break;
 						case ECONNREFUSED :

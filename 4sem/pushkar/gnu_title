@@ -1,0 +1,4 @@
+set xrange[1:2]
+set title " Laboratory work 1, Kostenchuk M., 8th variant. y'=e^(−(x*x+y*y))*sin(x)"
+plot'euler' title "Euler method" with lines, 'runge_kutt_2' title "Runge-Kutt 2-nd range metnod " with lines, 'runge_kutt_4' title "Runge-Kutt 4-th range method " with lines
+pause -1
