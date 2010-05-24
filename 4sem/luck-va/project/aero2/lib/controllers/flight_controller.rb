@@ -62,13 +62,8 @@ class FlightController < Controller
         @item.save(@db)
       else
         if @cgi.params.has_key?('id') and @cgi.params['id'][0] != ''
-          if @item.nil?
-            @item = Flight.new
-            @header = 'Внесение новой информации о рейсах'
-          else
-            @item = Flight.find_by_id(@db, @cgi.params['id'][0])
-            @header = 'Редактирование информации о рейсе'
-          end
+          @item = Flight.find_by_id(@db, @cgi.params['id'][0]) if @item.nil?
+          @header = 'Редактирование информации о рейсе'
         else
           @item = Flight.new
           @header = 'Внесение новой информации о рейсах'
