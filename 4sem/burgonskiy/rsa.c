@@ -7,8 +7,8 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#define DEBUG
-#define MAXN 4294967296
+#define DEBUGf
+#define MAXN 4294967295
 
 unsigned long long gcd(unsigned long long a, unsigned long long b){
   unsigned long long gcd, n1 = abs(a), n2 = abs(b);
@@ -90,6 +90,20 @@ unsigned long long prime_too(unsigned long long a){
   return res;
 }
 
+unsigned long long crypt_num(unsigned long long num, unsigned long long e, unsigned long long n){
+  unsigned long long r = 1;
+  for(; e > 0 ; e >>= 1){
+    if (e % 2 == 1){
+      r = (r * num) % n;
+			e--;
+    }
+    num = (num * num) % n;
+  }
+  return r;
+}
+
+
+
 int main(int argc, char **argv){
   int i,j, r_size;
   unsigned long long tmp1, tmp2;
@@ -100,11 +114,8 @@ int main(int argc, char **argv){
   FILE *fid_keys;
   int fid_in, fid_out;
   fid_in = open(argv[1], O_RDONLY);
-  fid_out = open(argv[2], O_WRONLY);
+  fid_out = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 00755);
   if (strcmp(argv[3], "1") == 0){ /*1 -- encode 0 - decode*/
-#ifdef DEBUG
-    printf("Start encode equations.\n");
-#endif    
     fid_keys = fopen("keys", "w");
     p = prime();
     q = prime();
@@ -118,57 +129,26 @@ int main(int argc, char **argv){
     e = prime_too(phi);
     extended_euclid(e, phi, &d, &tmp1, &tmp2);
     d = d % phi;
-#ifdef DEBUG
-    printf("Variables:\n p: %llu, q: %llu, n: %llu\n phi: %llu, e: %llu\n d: %llu\n=====\n", p, q, n, phi, e, d);
-    printf("Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
-    printf("=========\nStop encode equations\n");
-#endif
     fprintf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
   }else{
-#ifdef DEBUG
-    printf("Start decode equations.\n");
-#endif
-
     fid_keys = fopen("keys", "r");
     if (fscanf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", &d, &n, &e, &n) < 4){puts("Make keys with param 1 first."); exit(0);};
-#ifdef DEBUG
-    printf("Variables:\n n: %llu\n e: %llu\n d: %llu\n=====\n", n, e, d);
-    printf("Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
-    printf("=========\nStop decode equations\n");
-#endif
   }
   nn = 1; r_size = 0;
   while (nn <= n) {nn <<= 8; r_size++;};
-#ifdef DEBUG
-    printf("r_size: %d\n", r_size);
-#endif
   r_size -= 1;
   if (r_size <= 0){puts("Error: Too small p, q. p*q must be bigger than 255."); exit(0);}
   buf_uchar = (unsigned char *) malloc(r_size);
+	buf_char = (unsigned char *) malloc(r_size);
   if (strcmp(argv[3], "1") == 0){
-#ifdef DEBUG
-    puts("Start encoding\n");
-#endif
     while (read(fid_in, buf_uchar, r_size) > 0){
-			num = 0;
+			num = (unsigned long long) buf_uchar[0];
       for(i = 1; i < r_size; i++){
         num <<= 8;
         num += (unsigned long long) buf_uchar[i];
       }
-#ifdef DEBUG
-			if (num > n){
-				printf("Error: num > n\n%llu, %llu\n\n", num, n);
-			}
-#endif
-      encoded_num = ((num % n) * (d % n)) % n;
-#ifdef DEBUG
-			if (num != ((encoded_num % n) * (e % n)) % n){
-				printf("Error: Must be equal:\n%llu, %llu\n\n", num, ((encoded_num % n) * (e % n)) % n);
-			}
-#endif
-			
+			encoded_num = crypt_num(num, d, n);
       buf_uchar[0] = (unsigned char) encoded_num;
-			encoded_num = 0;
       for(i = 1; i < r_size; i++){
         encoded_num >>= 8;
         buf_uchar[i] = (unsigned char) encoded_num;
@@ -182,7 +162,7 @@ int main(int argc, char **argv){
         encoded_num <<= 8;
         encoded_num += (unsigned long long) buf_uchar[i];
       }
-      num = ((encoded_num % n) * (e % n)) % n;
+      num = crypt_num(encoded_num, e, n);
       buf_char[0] = (char) num;
       for(i = 1; i < r_size; i++){
         num >>= 8;
@@ -193,30 +173,8 @@ int main(int argc, char **argv){
   }
   free(buf_uchar);
   free(buf_char);
-  close(fid_in);
-  close(fid_out);
+	if (close(fid_in) < 0) {perror("close fid_in: "); exit(0);};
+	if (close(fid_out) < 0) {perror("close fid_out: "); exit(0);};
   fclose(fid_keys);
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
