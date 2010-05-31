@@ -4,8 +4,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/uio.h>
+#include <unistd.h>
 
 #define DEBUG
+#define MAXN 4294967296
 
 unsigned long long gcd(unsigned long long a, unsigned long long b){
   unsigned long long gcd, n1 = abs(a), n2 = abs(b);
@@ -88,9 +91,9 @@ unsigned long long prime_too(unsigned long long a){
 }
 
 int main(int argc, char **argv){
-  unsigned long long i,j;
-  unsigned long long tmp1, tmp2, r_size;
-  unsigned long long p, q, e, d, a;
+  int i,j, r_size;
+  unsigned long long tmp1, tmp2;
+  unsigned long long p, q, e, d;
   unsigned long long phi, n, nn, num, encoded_num;
   unsigned char *buf_uchar;
   char *buf_char;
@@ -106,6 +109,11 @@ int main(int argc, char **argv){
     p = prime();
     q = prime();
     n = p*q;
+		while (n >= MAXN){
+			p = prime();
+	    q = prime();
+	    n = p*q;
+		}
     phi = (p-1)*(q-1);
     e = prime_too(phi);
     extended_euclid(e, phi, &d, &tmp1, &tmp2);
@@ -130,7 +138,10 @@ int main(int argc, char **argv){
 #endif
   }
   nn = 1; r_size = 0;
-  while (nn <= n) {nn <<= 8; r_size+=1;};
+  while (nn <= n) {nn <<= 8; r_size++;};
+#ifdef DEBUG
+    printf("r_size: %d\n", r_size);
+#endif
   r_size -= 1;
   if (r_size <= 0){puts("Error: Too small p, q. p*q must be bigger than 255."); exit(0);}
   buf_uchar = (unsigned char *) malloc(r_size);
@@ -139,12 +150,25 @@ int main(int argc, char **argv){
     puts("Start encoding\n");
 #endif
     while (read(fid_in, buf_uchar, r_size) > 0){
+			num = 0;
       for(i = 1; i < r_size; i++){
         num <<= 8;
         num += (unsigned long long) buf_uchar[i];
       }
-      encoded_num = (num * d) % n;
+#ifdef DEBUG
+			if (num > n){
+				printf("Error: num > n\n%llu, %llu\n\n", num, n);
+			}
+#endif
+      encoded_num = ((num % n) * (d % n)) % n;
+#ifdef DEBUG
+			if (num != ((encoded_num % n) * (e % n)) % n){
+				printf("Error: Must be equal:\n%llu, %llu\n\n", num, ((encoded_num % n) * (e % n)) % n);
+			}
+#endif
+			
       buf_uchar[0] = (unsigned char) encoded_num;
+			encoded_num = 0;
       for(i = 1; i < r_size; i++){
         encoded_num >>= 8;
         buf_uchar[i] = (unsigned char) encoded_num;
@@ -158,7 +182,7 @@ int main(int argc, char **argv){
         encoded_num <<= 8;
         encoded_num += (unsigned long long) buf_uchar[i];
       }
-      num = (encoded_num * e) % n;
+      num = ((encoded_num % n) * (e % n)) % n;
       buf_char[0] = (char) num;
       for(i = 1; i < r_size; i++){
         num >>= 8;
