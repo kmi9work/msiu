@@ -1,14 +1,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-int big_simple(unsigned long long x){
-	x = rand() % 1000;
-	return x;
+#define DEBUG
+
+unsigned long long gcd(unsigned long long a, unsigned long long b){
+  unsigned long long gcd, n1 = abs(a), n2 = abs(b);
+  for (gcd = (n1 < n2) ? n1 : n2; gcd > 0; gcd--)
+    if (!(n1 % gcd || n2 % gcd))
+      break;
+  return gcd;
 }
 
-
-void extended_euclid(int a, int b, int *x, int *y, int *d)
+void extended_euclid(unsigned long long a, unsigned long long b, unsigned long long *x, unsigned long long *y, unsigned long long *d)
 /* calculates a * *x + b * *y = gcd(a, b) = *d */
 {
   long q, r, x1, x2, y1, y2;
@@ -26,78 +33,146 @@ void extended_euclid(int a, int b, int *x, int *y, int *d)
   *d = a, *x = x2, *y = y2;
 }
 
-int simple_too(unsigned long long a, int res){
-	res = rand() % 1000;
-	return res;
+unsigned long long witness(unsigned long long a, unsigned long long n){
+  unsigned long long d;
+  unsigned long long b;
+  long c;
+  d=1;
+  b=n-1;
+  for(; b!=0; b>>=1){
+    if (b&1){
+      d = (d*a)%n;
+    }
+    c = a;
+    a = (a*a)%n;
+    if ((a == 1) && (c != 1) && (c != n-1)) return 1;
+  }
+  if (d == 1) return 0; 
+  return 1;
+}
+ 
+unsigned long long miller_rabin(unsigned long long n, unsigned long long s){
+  unsigned long long i;
+  unsigned long long a;
+  
+  for(i = 0 ; i < s ; i++){
+    a = rand()%(n-1);
+    if(witness(a, n) == 1){
+      return 0;
+    }
+  }
+  return 1;
+}
+
+unsigned long long prime(void){
+  unsigned long long p;
+  unsigned long long i = 1;
+  unsigned long long s = 1000;
+  while(i){
+    p = rand() % 65536;
+    i = !(miller_rabin(p, s));
+  }
+  return p;
+}
+
+unsigned long long prime_too(unsigned long long a){
+  unsigned long long res;
+  res = 1;
+  while (1){
+    res = rand() % 65536;
+    if (gcd(a, res) == 1){
+      return res;
+    }
+  } 
+  return res;
 }
 
 int main(int argc, char **argv){
-	int i,j;
-	int tmp1, tmp2, r_size;
-	int p, q, e;
-	unsigned long long phi, n, nn, num, encoded_num;
-	char *buf;
-	int fid_in, fid_out, fid_keys;
-	fid_in = fopen(argv[1], "r");
-	fid_out = fopen(argv[2], "w");
-	if (argv[3] = "1"){ /*1 -- encode 0 - decode*/
-		fid_keys = fopen("keys", "w");
-		p = big_simple(p);
-		q = big_simple(q);
-		n = p*q;
-		phi = (p-1)*(q-1);
-		e = simple_too(phi, e);
-		extended_euclid(e, phi, d, tmp1, tmp2);
-		d = d % phi;
-		fprintf(fid_keys, "Secret key: %d-%d\nPublic key: %d-%d\n", d, n, e, n);
-	}else{
-		fid_keys = fopen("keys", "r");
-		if (fscanf(fid_keys, "Secret key: %d-%d\nPublic key: %d-%d\n", &d, &n, &e, &n) < 4){puts("Make keys with param 1 first."); exit(0);};
-	}
-	nn = 1; r_size = 0;
-	while (nn <= n) {nn <<= 8; r_size+=1};
-	r_size -= 1;
-	if (r_size <= 0){puts("Error: Too small p, q. p*q must be bigger than 255."); exit(0);}
-	buf = (char *) malloc(r_size);
-	if (argv[3] = "1"){
-		while (1){
-			fgets(buf, r_size, fid_in);
-			num = (unsigned long long) buf[0];
-			for(i = 1; i < r_size; i++){
-				num <<= 8;
-				num += (unsigned long long) buf[i];
-			}
-			encoded_num = (num * d) % n;
-			buf[0] = (char) encoded_num;
-			for(i = 1; i < r_size; i++){
-				encoded_num >>= 8;
-				buf[i] = (char) encoded_num;
-			}
-			fputs(buf, fid_out);
-		}
-	}else{
-		while (1){
-			fgets(buf, r_size, fid_in);
-			encoded_num = (unsigned long long) buf[0];
-			for(i = 1; i < r_size; i++){
-				encoded_num <<= 8;
-				encoded_num += (unsigned long long) buf[i];
-			}
-			num = (encoded_num * e) % n;
-			buf[0] = (char) num;
-			for(i = 1; i < r_size; i++){
-				num >>= 8;
-				buf[i] = (char) num;
-			}
-			fputs(buf, fid_out);
-		}
-	}
-	free(buf);
-	fclose(fid_in);
-	fclose(fid_out);
-	fclose(fid_keys);
-	printf("%lu\n", sizeof(a));
-	return 0;
+  unsigned long long i,j;
+  unsigned long long tmp1, tmp2, r_size;
+  unsigned long long p, q, e, d, a;
+  unsigned long long phi, n, nn, num, encoded_num;
+  unsigned char *buf_uchar;
+  char *buf_char;
+  FILE *fid_keys;
+  int fid_in, fid_out;
+  fid_in = open(argv[1], O_RDONLY);
+  fid_out = open(argv[2], O_WRONLY);
+  if (strcmp(argv[3], "1") == 0){ /*1 -- encode 0 - decode*/
+#ifdef DEBUG
+    printf("Start encode equations.\n");
+#endif    
+    fid_keys = fopen("keys", "w");
+    p = prime();
+    q = prime();
+    n = p*q;
+    phi = (p-1)*(q-1);
+    e = prime_too(phi);
+    extended_euclid(e, phi, &d, &tmp1, &tmp2);
+    d = d % phi;
+#ifdef DEBUG
+    printf("Variables:\n p: %llu, q: %llu, n: %llu\n phi: %llu, e: %llu\n d: %llu\n=====\n", p, q, n, phi, e, d);
+    printf("Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
+    printf("=========\nStop encode equations\n");
+#endif
+    fprintf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
+  }else{
+#ifdef DEBUG
+    printf("Start decode equations.\n");
+#endif
+
+    fid_keys = fopen("keys", "r");
+    if (fscanf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", &d, &n, &e, &n) < 4){puts("Make keys with param 1 first."); exit(0);};
+#ifdef DEBUG
+    printf("Variables:\n n: %llu\n e: %llu\n d: %llu\n=====\n", n, e, d);
+    printf("Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
+    printf("=========\nStop decode equations\n");
+#endif
+  }
+  nn = 1; r_size = 0;
+  while (nn <= n) {nn <<= 8; r_size+=1;};
+  r_size -= 1;
+  if (r_size <= 0){puts("Error: Too small p, q. p*q must be bigger than 255."); exit(0);}
+  buf_uchar = (unsigned char *) malloc(r_size);
+  if (strcmp(argv[3], "1") == 0){
+#ifdef DEBUG
+    puts("Start encoding\n");
+#endif
+    while (read(fid_in, buf_uchar, r_size) > 0){
+      for(i = 1; i < r_size; i++){
+        num <<= 8;
+        num += (unsigned long long) buf_uchar[i];
+      }
+      encoded_num = (num * d) % n;
+      buf_uchar[0] = (unsigned char) encoded_num;
+      for(i = 1; i < r_size; i++){
+        encoded_num >>= 8;
+        buf_uchar[i] = (unsigned char) encoded_num;
+      }
+      write(fid_out, buf_uchar, r_size);
+    }
+  }else{
+    while (read(fid_in, buf_uchar, r_size) > 0){
+      encoded_num = (unsigned long long) buf_uchar[0];
+      for(i = 1; i < r_size; i++){
+        encoded_num <<= 8;
+        encoded_num += (unsigned long long) buf_uchar[i];
+      }
+      num = (encoded_num * e) % n;
+      buf_char[0] = (char) num;
+      for(i = 1; i < r_size; i++){
+        num >>= 8;
+        buf_char[i] = (char) num;
+      }
+      write(fid_out, buf_char, r_size);
+    }
+  }
+  free(buf_uchar);
+  free(buf_char);
+  close(fid_in);
+  close(fid_out);
+  fclose(fid_keys);
+  return 0;
 }
 
 
