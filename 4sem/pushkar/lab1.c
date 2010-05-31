@@ -161,18 +161,18 @@ void gnu_title(double x_start, double x_end, int *method){
   
   file = fopen("gnu_title", "w");
   fprintf(file, "set xrange[%d:%d]\n", (int)floor(x_start), (int)ceil(x_end));
-  fprintf(file,"set title \" Laboratory work 1, Kostenchuk M., 8th variant. y'=e^(−(x*x+y*y))*sin(x)\"\n");
+  fprintf(file,"set title \" Лабораторная работа 1, Костенчук М., 8-ой вариант. y'=e^(−(x*x+y*y))*sin(x)\"\n");
   fprintf(file,"plot");
   if (method[0] == YES) {
-    fprintf(file,"'euler' title \"Euler method\" with lines"); 
+    fprintf(file,"'euler' title \"Метод Эйлера\" with lines"); 
   }
   if (method[1] == YES) {
     if (method[0] == YES) fprintf(file,", ");
-    fprintf(file,"'runge_kutt_2' title \"Runge-Kutt 2-nd range metnod \" with lines");
+    fprintf(file,"'runge_kutt_2' title \"Метод Рунге-Кутта 2-ого порядка\" with lines");
   }
   if (method[2] == YES) {
     if (method[0] == YES || method[1] == YES) fprintf(file,", ");
-    fprintf(file,"'runge_kutt_4' title \"Runge-Kutt 4-th range method \" with lines");
+    fprintf(file,"'runge_kutt_4' title \"Метод Рунге-Кутта 4-ого порядка\" with lines");
   }
   fprintf(file,"\npause -1\n"); 
 
@@ -191,21 +191,21 @@ void init(){
   method[0] = method[1] = method[2] = NO;
    
   while(1){
-    printf("\nUse default values:  x e [1,2], y(2)=1 ? (y or n) ");
+    printf("\nИспользовать данные по-умолчанию:  x e [1,2], y(2)=1 ? (y or n) ");
     scanf("%c",&n);
     if(n == 'n' || n == 'y') break;
   }
 
-  printf("\t1. Euler method\n\t2. Runge-Kutt 2-nd range metnod with precision\n\t3. Runge-Kutt 4-th range metnod with precision \n\n");
+  printf("\t1. Метод Эйлера\n\t2. Метод Рунге-Кутта 2-ого порядка \n\t3. Метод Рунге-Кутта 4-ого порядка \n\n");
   
   method[0] = method[1] = method[2] = YES;
   if (n == 'n') {
 
     printf("\n");
-    printf("Input start point of length a: ");
+    printf("Введите начальную точку отрезка a: ");
     scanf("%f",&x_start);
     
-    printf("Input begin point of length b: ");
+    printf("Введите конечную точку отрезка b: ");
     scanf("%f",&x_end);
     
     if (x_end <= x_start){
@@ -215,33 +215,28 @@ void init(){
     }
     
     while(1) {
-      printf("Input point x0: ");
+      printf("Введите точку x0: ");
       scanf("%f",&x_0);
-      if (x_0 < x_start || x_0 > x_end) printf("\nPoint must belong to the length\n");
+      if (x_0 < x_start || x_0 > x_end) printf("\nТочка должна принадлежать отрезку [a,b]\n");
       else break;
     } 
     while(1) {
-      printf("Input point y0: ");
+      printf("Введите точку y0: ");
       scanf("%f",&y_0);
-      if(y_0 < 0) {
-        printf("Value of y must be bigger than zero\n");
-      } else {
-        break;
-      }
     }
     
     while(1){    
-      printf("Input number of nodes: ");
+      printf("Введите колличество точек: ");
       scanf("%d",&N);
       if(N >= 10 && N <= 100000) break;
-      else printf("\nMore than 10 and less than 100 000\n\n");
+      else printf("\nКоличество точек должно быть в промежутке: [10,100 000]\n\n");
     }
     
     while(1){
       printf("Input alpha: ");
       scanf("%f",&alpha);
       if(alpha > 0 && alpha <= 1) break; 
-      else printf("\nAlpha must belong to the length: [0,1]\n\n");
+      else printf("\nАльфа должна лежать в промежутке: [0,1]\n\n");
     }
   }
   else {
@@ -278,7 +273,7 @@ void init(){
 int main(){
   system("clear");
   
-  printf("\n\t Student: Kostenchuk M.\n\t Group: 4361 \n\t Variant: 8 \n\t Cauchy problem's solution of equation y'=y*ln(sqrt(x))\n");
+  printf("\n\t Студент: Костенчук М.\n\t Группа: 4361 \n\t Вариант: 8 \n\t Численное решение задачи Коши для уравнения y'=e^(−(x*x+y*y))*sin(x)\n");
 
   init();
   system("gnuplot gnu_title");
