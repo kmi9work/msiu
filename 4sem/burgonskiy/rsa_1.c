@@ -4,11 +4,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/types.h>
 #include <sys/uio.h>
-#include <unistd.h>
+#include <unistd.h>	
 
-#define DEBUGf
-#define MAXN 4294967295
+#define DEBUG
 
 unsigned long long gcd(unsigned long long a, unsigned long long b){
   unsigned long long gcd, n1 = abs(a), n2 = abs(b);
@@ -90,7 +90,7 @@ unsigned long long prime_too(unsigned long long a){
   return res;
 }
 
-unsigned long long crypt(unsigned long long d, unsigned long long e, unsigned long long n){
+unsigned long long crypt_num(unsigned long long d, unsigned long long e, unsigned long long n){
   unsigned long long r=1;
   for(; e > 0 ; e >>= 1){
     if ((e%2)==1) {
@@ -103,13 +103,13 @@ unsigned long long crypt(unsigned long long d, unsigned long long e, unsigned lo
 
 
 int main(int argc, char **argv){
-  int i,j, r_size;
+  unsigned long long i,j;
   unsigned long long tmp1, tmp2;
-  unsigned long long p, q, e, d;
+  unsigned long long p, q, e, d, a;
   unsigned long long phi, n, nn, num, encoded_num;
   unsigned long long buf;
   FILE *fid_keys;
-  int fid_in, fid_out, r_count;
+  int fid_in, fid_out, r_count, r_size;
   fid_in = open(argv[1], O_RDONLY);
   fid_out = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 00755);
   if (strcmp(argv[3], "1") == 0){ /*1 -- encode 0 - decode*/
@@ -117,11 +117,6 @@ int main(int argc, char **argv){
     p = prime();
     q = prime();
     n = p*q;
-    while (n >= MAXN){
-      p = prime();
-      q = prime();
-      n = p*q;
-    }
     phi = (p-1)*(q-1);
     e = prime_too(phi);
     extended_euclid(e, phi, &d, &tmp1, &tmp2);
@@ -132,20 +127,20 @@ int main(int argc, char **argv){
     if (fscanf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", &d, &n, &e, &n) < 4){puts("Make keys with param 1 first."); exit(0);};
   }
   nn = 1; r_size = 0;
-  while (nn <= n) {nn <<= 8; r_size++;};
+  while (nn <= n) {nn <<= 8; r_size+=1;};
   r_size -= 1;
   if (r_size <= 0){puts("Error: Too small p, q. p*q must be bigger than 255."); exit(0);}
-  printf("%d\n", r_size);
   if (strcmp(argv[3], "1") == 0){
-    while (r_count = read(fid_in, num, r_size) > 0){
-      encoded_num = crypt(num, d, n);
-      printf("%llu\n", encoded_num);
-      write(fid_out, ((char *)(&encoded_num)) + sizeof(unsigned long long) - r_count, r_count);
+    while (read(fid_in, &num, r_size) > 0){
+      encoded_num = crypt_num(num, d, n);
+			printf("%d\n",(int) encoded_num);
+			printf("%llu\n", encoded_num);
+      write(fid_out, ((char *)(&encoded_num)) + (sizeof(unsigned long long) - 1) - r_size, r_size + 1);
     }
   }else{
-    while (r_count = read(fid_in, num, r_size) > 0){
-      num = crypt(encoded_num, e, n);
-      write(fid_out, ((char *)(&num))  + sizeof(unsigned long long) - r_count, r_count);
+    while (read(fid_in, &encoded_num, r_size + 1) > 0){
+      num = crypt_num(encoded_num, e, n);
+      write(fid_out, ((char *)(&num))  + (sizeof(unsigned long long) - 1) - r_size + 1, r_size);
     }
   }
   if (close(fid_in) < 0){perror("fid_in"); exit(0);};
