@@ -110,9 +110,6 @@ int main(int argc, char **argv){
   fid_in = open(argv[1], O_RDONLY);
   fid_out = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 00755);
   if (strcmp(argv[3], "1") == 0){ /*1 -- encode 0 - decode*/
-#ifdef DEBUG
-    printf("Start encode equations.\n");
-#endif    
     fid_keys = fopen("keys", "w");
     p = prime();
     q = prime();
@@ -121,24 +118,11 @@ int main(int argc, char **argv){
     e = prime_too(phi);
     extended_euclid(e, phi, &d, &tmp1, &tmp2);
     d = d % phi;
-#ifdef DEBUG
-    printf("Variables:\n p: %llu, q: %llu, n: %llu\n phi: %llu, e: %llu\n d: %llu\n=====\n", p, q, n, phi, e, d);
-    printf("Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
-    printf("=========\nStop encode equations\n");
-#endif
     fprintf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
   }else{
-#ifdef DEBUG
-    printf("Start decode equations.\n");
-#endif
 
     fid_keys = fopen("keys", "r");
     if (fscanf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", &d, &n, &e, &n) < 4){puts("Make keys with param 1 first."); exit(0);};
-#ifdef DEBUG
-    printf("Variables:\n n: %llu\n e: %llu\n d: %llu\n=====\n", n, e, d);
-    printf("Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
-    printf("=========\nStop decode equations\n");
-#endif
   }
   nn = 1; r_size = 0;
   while (nn <= n) {nn <<= 8; r_size+=1;};
@@ -146,15 +130,17 @@ int main(int argc, char **argv){
   if (r_size <= 0){puts("Error: Too small p, q. p*q must be bigger than 255."); exit(0);}
   printf("%d\n", r_size);
   if (strcmp(argv[3], "1") == 0){
-    while (r_count = read(fid_in, num, r_size) > 0){
+    num = 0;
+    while (read(fid_in, &num, r_size) > 0){
       encoded_num = crypt(num, d, n);
-      printf("%llu\n", encoded_num);
-      write(fid_out, ((char *)(&encoded_num)) + sizeof(unsigned long long) - r_count, r_count);
+      printf("%llu, %llu\n", num, encoded_num);
+      write(fid_out, &encoded_num, r_size + 1);
     }
   }else{
-    while (r_count = read(fid_in, num, r_size) > 0){
+    encoded_num = 0;
+    while (read(fid_in, &encoded_num, r_size + 1) > 0){
       num = crypt(encoded_num, e, n);
-      write(fid_out, ((char *)(&num))  + sizeof(unsigned long long) - r_count, r_count);
+      write(fid_out, &num, r_size);
     }
   }
   if (close(fid_in) < 0){perror("fid_in"); exit(0);};
