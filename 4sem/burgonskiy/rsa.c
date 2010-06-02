@@ -87,17 +87,28 @@ unsigned long long prime_too(unsigned long long a){
   return res;
 }
 
+unsigned long long crypt(unsigned long long d, unsigned long long e, unsigned long long n){
+  unsigned long long r=1;
+  for(; e > 0 ; e >>= 1){
+    if ((e%2)==1) {
+      r=(r*d)%n;
+    }
+    d=(d*d)%n;
+  }
+  return r;
+}
+
+
 int main(int argc, char **argv){
   unsigned long long i,j;
   unsigned long long tmp1, tmp2, r_size;
   unsigned long long p, q, e, d, a;
   unsigned long long phi, n, nn, num, encoded_num;
-  unsigned char *buf_uchar;
-  char *buf_char;
+  unsigned long long buf;
   FILE *fid_keys;
-  int fid_in, fid_out;
+  int fid_in, fid_out, r_count;
   fid_in = open(argv[1], O_RDONLY);
-  fid_out = open(argv[2], O_WRONLY);
+  fid_out = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 00755);
   if (strcmp(argv[3], "1") == 0){ /*1 -- encode 0 - decode*/
 #ifdef DEBUG
     printf("Start encode equations.\n");
@@ -133,66 +144,21 @@ int main(int argc, char **argv){
   while (nn <= n) {nn <<= 8; r_size+=1;};
   r_size -= 1;
   if (r_size <= 0){puts("Error: Too small p, q. p*q must be bigger than 255."); exit(0);}
-  buf_uchar = (unsigned char *) malloc(r_size);
+  printf("%d\n", r_size);
   if (strcmp(argv[3], "1") == 0){
-#ifdef DEBUG
-    puts("Start encoding\n");
-#endif
-    while (read(fid_in, buf_uchar, r_size) > 0){
-      for(i = 1; i < r_size; i++){
-        num <<= 8;
-        num += (unsigned long long) buf_uchar[i];
-      }
-      encoded_num = (num * d) % n;
-      buf_uchar[0] = (unsigned char) encoded_num;
-      for(i = 1; i < r_size; i++){
-        encoded_num >>= 8;
-        buf_uchar[i] = (unsigned char) encoded_num;
-      }
-      write(fid_out, buf_uchar, r_size);
+    while (r_count = read(fid_in, num, r_size) > 0){
+      encoded_num = crypt(num, d, n);
+      printf("%llu\n", encoded_num);
+      write(fid_out, ((char *)(&encoded_num)) + sizeof(unsigned long long) - r_count, r_count);
     }
   }else{
-    while (read(fid_in, buf_uchar, r_size) > 0){
-      encoded_num = (unsigned long long) buf_uchar[0];
-      for(i = 1; i < r_size; i++){
-        encoded_num <<= 8;
-        encoded_num += (unsigned long long) buf_uchar[i];
-      }
-      num = (encoded_num * e) % n;
-      buf_char[0] = (char) num;
-      for(i = 1; i < r_size; i++){
-        num >>= 8;
-        buf_char[i] = (char) num;
-      }
-      write(fid_out, buf_char, r_size);
+    while (r_count = read(fid_in, num, r_size) > 0){
+      num = crypt(encoded_num, e, n);
+      write(fid_out, ((char *)(&num))  + sizeof(unsigned long long) - r_count, r_count);
     }
   }
-  free(buf_uchar);
-  free(buf_char);
-  close(fid_in);
-  close(fid_out);
+  if (close(fid_in) < 0){perror("fid_in"); exit(0);};
+  if (close(fid_out) < 0){perror("fid_out"); exit(0);};
   fclose(fid_keys);
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
