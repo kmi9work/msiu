@@ -252,32 +252,13 @@ int main(){
 				fl = 0;
 				count_r = BUF_SIZE;
 				bzero(&buf, BUF_SIZE);
-				while(1){
+				while ((count_r = recv(host_s, &buf, BUF_SIZE, 0)) == BUF_SIZE){
+					fl = 1;
+					printf("\nFrom host to client=========\n%s\n===========\n", buf);
+					printf("%d: Read %d.\n", getpid(), count_r);
+					send(client_s, &buf, count_r, 0);
+					printf("Sent to Client.\n");
 					bzero(&buf, BUF_SIZE);
-					if ((count_r = recv(host_s, &buf, BUF_SIZE, 0)) < 0){
-						switch (errno){
-							case EINTR : continue;
-						}
-						perror("recv2");
-						true_exit(2);
-					}
-					
-					if (count_r == BUF_SIZE){
-						fl = 1;
-						printf("\nFrom host to client=========\n%s\n===========\n", buf);
-						printf("%d: Read %d.\n", getpid(), count_r);
-						write(fd1, &buf, count_r);
-						send(client_s, &buf, count_r, 0);
-						printf("Sent to Client.\n");
-						continue;
-					}else{
-						printf("\nFrom host to client=========\n%s\n===========\n", buf);
-						printf("%d: Read - %d.\n", getpid(), count_r);
-						write(fd1, &buf, count_r);
-						send(client_s, &buf, count_r, 0);
-						printf("Sent to Client.\n");
-						break;
-					}
 				}
 				if (fl == 0 && count_r == 0){
 					/*Заканчиваем когда откуда-нибудь получили EOF...*/
@@ -285,6 +266,11 @@ int main(){
 					printf("EXIT.\n");
 					true_exit(0);
 					break;
+				}else{
+					printf("\nFrom host to client=========\n%s\n===========\n", buf);
+					printf("%d: Read - %d.\n", getpid(), count_r);
+					send(client_s, &buf, count_r, 0);
+					printf("Sent to Client.\n");
 				}
 				close(fd);
 				close(fd1);

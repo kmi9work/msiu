@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>English</string>
 		<key>CFBundleIdentifier</key>
-		<string>com.apple.xcode.dsym.a.out</string>
+		<string>com.apple.xcode.dsym.client</string>
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundlePackageType</key>
@@ -19,7 +19,7 @@
 		<key>dSYM_UUID</key>
 		<dict>
 			<key>i386</key>
-			<string>5C8EFBCF-5646-D6F4-B8EB-81431F6AE39C</string>
+			<string>221F3D73-45B1-0E1A-BFFD-C2645B4C7113</string>
 		</dict>
 	</dict>
 </plist>
