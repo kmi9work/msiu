@@ -128,6 +128,7 @@ int main(int argc, char **argv){
     d = d % phi;
     fprintf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", d, n, e, n);
   }else{
+
     fid_keys = fopen("keys", "r");
     if (fscanf(fid_keys, "Secret key: %llu-%llu\nPublic key: %llu-%llu\n", &d, &n, &e, &n) < 4){puts("Make keys with param 1 first."); exit(0);};
   }
@@ -137,15 +138,17 @@ int main(int argc, char **argv){
   if (r_size <= 0){puts("Error: Too small p, q. p*q must be bigger than 255."); exit(0);}
   printf("%d\n", r_size);
   if (strcmp(argv[3], "1") == 0){
-    while (r_count = read(fid_in, num, r_size) > 0){
+    num = 0;
+    while (read(fid_in, &num, r_size) > 0){
       encoded_num = crypt(num, d, n);
-      printf("%llu\n", encoded_num);
-      write(fid_out, ((char *)(&encoded_num)) + sizeof(unsigned long long) - r_count, r_count);
+      printf("%llu, %llu\n", num, encoded_num);
+      write(fid_out, &encoded_num, r_size + 1);
     }
   }else{
-    while (r_count = read(fid_in, num, r_size) > 0){
+    encoded_num = 0;
+    while (read(fid_in, &encoded_num, r_size + 1) > 0){
       num = crypt(encoded_num, e, n);
-      write(fid_out, ((char *)(&num))  + sizeof(unsigned long long) - r_count, r_count);
+      write(fid_out, &num, r_size);
     }
   }
   if (close(fid_in) < 0){perror("fid_in"); exit(0);};
