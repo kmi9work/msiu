@@ -8,7 +8,7 @@ module Helper
       end.join("\n") +
       "</select>" 
     else
-      ""
+      "Нет подходящего персонала"
     end
   end
   def companies_select(name, selected)

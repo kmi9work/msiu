@@ -81,10 +81,16 @@ end.join("<br/>") +
 </table>
       </td>
     </tr>
+    <tr>
+      <td>
+        <a href='aero.rb?controller=Crew&action=show&flight_id=#{@item[:id]}'>Показать экипаж</a>
+      </td>
+      <td>
+        <a href='aero.rb?controller=Crew&action=edit&flight_id=#{@item[:id]}'>Изменить экипаж</a>
+      </td>
+    </tr>
   </tbody>
 </table>
-
-
 
 "
 

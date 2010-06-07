@@ -1,0 +1,201 @@
+%
+%  untitled
+%
+%  Created by Михаил Костенчук on 2009-05-29.
+%  Copyright (c) 2009 __MyCompanyName__. All rights reserved.
+%
+\documentclass[a4paper,11pt]{article}
+\usepackage[utf8]{inputenc}
+\RequirePackage[english,russian]{babel}
+\usepackage{fullpage}
+\usepackage{verbatim}
+\usepackage{minitoc}
+\usepackage{graphicx}
+\usepackage{caption2}
+\renewcommand{\captionlabeldelim}{.} 
+\title{Простейший SOCKS сервер}
+\author{М.И. Костенчук}
+
+\date{06-06-2010}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Введение}
+
+Целью работы является написание простейшего SOCKS-сервера, обрабатывающего TCP/IP соединение. 
+
+\section{Протокол SOCKS 5}
+
+Соединение с SOCKS-сервером происходит следующим образом:
+
+\begin{enumerate}
+
+  \item Клиент подключается, и посылает приветствие, которое включает перечень поддерживаемых методов аутентификации
+
+  \item Сервер выбирает из них один (или посылает ответ о неудаче запроса, если ни один из предложенных методов не приемлем)
+
+  \item В зависимости от выбранного метода, между клиентом и сервером может пройти некоторое количество сообщений
+
+  \item Клиент посылает запрос на соединение специального вида
+
+  \item Сервер отвечает аналогичным образом
+
+\end{enumerate}
+
+Рассмотрим соединение подробней.
+
+Первый запрос от клиента выглядит следующим образом:
+
+\begin{tabular}{|c|c|c|}
+  \hline  
+  VER & NMethods & Methods \\
+  \hline  
+  1 & 1 & 1-255  \\  
+  \hline
+\end{tabular}
+
+Где первая строка это названия полей, а вторая их размер:
+
+\begin{itemize}
+  
+  \item VER~--- версия протокола. В нашем случае это поле равно 0x05.
+  
+  \item NMethods~--- Количество методов аутентификации.
+  
+  \item Methods~--- Методы аутентификации:
+  
+  \begin{itemize}
+    
+    \item 0x00~--- аутентификация не требуется
+    
+    \item 0x01~--- GSSAPI
+    
+    \item 0x02~--- USERNAME/PASSWORD (см. RFC 1929)
+    
+    \item 0x03 до 0x7F~--- зарезервировано IANA
+    
+    \item 0x80 до 0xFE~--- предназначено для частных методов
+    
+    \item 0xFF~--- нет применимых методов
+    
+  \end{itemize}
+  
+\end{itemize}
+
+Сервер выбирает один из предложенных методов и посылает ответ в следующем виде:
+
+\begin{tabular}{|c|c|}  
+  \hline  
+  VER & Method \\
+  \hline  
+  1 & 1 \\  
+  \hline
+\end{tabular}
+
+Затем клиент и сервер начинают аутентификацию выбранным способом. Реализация аутентификации выходит за рамки данной работы, поэтому не будет рассмотрено. 
+
+После успешной аутентификации клиент посылает серверу запрос вида:
+
+\begin{tabular}{|c|c|c|c|c|c|}  
+  \hline  
+  VER & CMD & RSV & AType & DST.Addr & DST.Port \\
+  \hline  
+  1 & 1 & 1 & 1 & переменное & 2\\  
+  \hline
+\end{tabular}
+
+\begin{itemize}
+
+  \item VER~--- Версия протокола
+
+  \item CMD~--- Тип запроса: 
+
+  \begin{itemize}
+
+    \item 0x01~--- Connect
+
+    \item 0x02~--- Bind
+
+    \item 0x03~--- UDP Associate
+
+  \end{itemize}
+
+  \item AType~--- Тип адреса хоста:
+
+  \begin{itemize}
+
+    \item 0x01~--- IPv4
+
+    \item 0x03~--- Имя домена 
+
+    \item 0x04~--- IPv6
+
+  \end{itemize}
+
+  \item DST.Addr~--- Адрес хоста в виде, указанном в AType:
+
+  \item DST.Port~--- Порт хоста
+
+\end{itemize}
+
+Сервер отправляет ответ вида:
+
+\begin{tabular}{|c|c|c|c|c|c|}  
+  \hline  
+  VER & REP & RSV & AType & BND.Addr & BND.Port \\
+  \hline  
+  1 & 1 & 1 & 1 & переменное & 2\\  
+  \hline
+\end{tabular}
+
+\begin{itemize}
+
+  \item VER~--- Версия протокола
+
+  \item REP~--- Код ответа: 
+
+  \begin{itemize}
+    
+    \item 0x00~--- Успешноый
+
+    \item 0x01 до 0x08~--- Различные ошибки
+
+  \end{itemize}
+
+  \item AType~--- Тип последующего адреса (аналогично запросу):
+
+  \item DST.Addr~--- Выданный сервером адрес
+
+  \item DST.Port~--- Выданный сервером порт
+
+\end{itemize}
+
+Если сервер ответил 0x00, значит значит соединение прошло успешно и можно отправлять данные.
+
+\section{Итог}
+
+Полностью реализовано соединение с клиентом. Обмен данными происходит следующим образом: Сервер ждёт сообщения от клиента, после его приёма полностью пересылает удалённому хосту, и пересылает ответ обратно клиенту. Для проверки реализован собственный простейший socks-клиент.
+
+\begin{thebibliography}{text} 
+
+\bibitem{1} \label{bib_1} \verb+http://ru.wikipedia.org/wiki/SOCKS+~--- Википедия про SOCKS.
+
+\bibitem{2} \label{bib_2} \verb+http://rfc2.ru/1928.rfc+~--- RFC 1928~--- протокол SOCKS5. 
+	
+\end{thebibliography} 
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
