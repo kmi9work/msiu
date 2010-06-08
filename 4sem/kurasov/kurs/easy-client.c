@@ -16,7 +16,7 @@
 
 /*easy client*/
 int main(int argc, char **argv){
-	int socks_s, count_r;
+	int socks_s, count_r, sum;
 	struct sockaddr_in socks_addr;
 	u_char buf[BUF_SIZE];
 	char buff[BUF_SIZE] = "GET / HTTP/1.1\nHost: google.ru\nUser-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.1.9) Gecko/20100315 Firefox/3.5.9 GTB7.0\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\nAccept-Language: ru,en-us;q=0.7,en;q=0.3\nAccept-Charset: windows-1251,utf-8;q=0.7,*;q=0.7\nKeep-Alive: 300\nProxy-Connection: keep-alive\r\n\r\n";
@@ -50,7 +50,7 @@ int main(int argc, char **argv){
 		perror("connect1: ");
 		exit(0);
 	};
-	buf[0] = 0x05;
+	/*buf[0] = 0x05;
 	buf[1] = 0x01;
 	buf[2] = 0x00;
 	send(socks_s, &buf, 3, 0);
@@ -70,17 +70,22 @@ int main(int argc, char **argv){
 	send(socks_s, &bnd, sizeof(bnd), 0);
 	
 	count_r = recv(socks_s, &dst, sizeof(dst), 0);
-	if (dst.cmd == 0x00){
+	if (dst.cmd == 0x00){*/
 		printf("All good.\n");
 		send(socks_s, buff, strlen(buff), 0);
 		printf("Received: ============\n");
-		while ((count_r = recv(socks_s, &buff, BUF_SIZE, 0)) == BUF_SIZE){
+		sum = 0;
+		while ((count_r = recv(socks_s, &buff, BUF_SIZE, 0)) > 0){
 			printf("%s", buff);
+			printf("count_r: %d\n", count_r);
+			sum += count_r;
 		};
+		sum += count_r;
 		printf("%s", buff);
 		printf("\n=====\n");
 		printf("count_r: %d\n", count_r);
-	}	
+		printf("sum: %d\n", sum);
+	/*}	*/
 	return 0;
 }
 

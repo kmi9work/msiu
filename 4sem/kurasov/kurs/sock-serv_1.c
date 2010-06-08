@@ -18,7 +18,48 @@ void true_exit(int a){
 	exit(a);
 }
 
+void wait_fork(int nforks){
+	int i;
+	for (i = 0; i < nforks; i++){
+		wait(NULL);
+	}
+}
+
+ssize_t my_recv(int socket, void *buffer, size_t len){
+	int count_r;
+	while(1){
+		if ((count_r = recv(socket, buffer, len, 0)) < 0){
+			if (errno == EINTR){
+				continue;
+			}
+			close(socket);
+			perror("recv: ");
+			exit(2);
+		}else{
+			break;
+		};
+	}
+	return count_r;
+}
+
+void my_send(int socket, const void *buffer, size_t len){
+	while(1){
+		if (send(socket, buffer, len, 0) < 0){
+			if (errno == EINTR){
+				continue;
+			}
+			close(socket);
+			perror("send: ");
+			exit(2);
+		}else{
+			break;
+		};
+	}
+}
+
+
 int main(){	
+	struct hostent *hp, *host_entry;
 	int pid;
 	int size_accept, size, count_r;
   int s, nport, client_s, host_s;
@@ -37,8 +78,8 @@ int main(){
 	socklen_t size_client;
 	char * hostname;
 	int fd, fd1;
-	fd = open("client.txt", O_WRONLY | O_CREAT | O_TRUNC);
-	fd1 = open("host.txt", O_WRONLY | O_CREAT | O_TRUNC);
+	int nforks = 0;
+	char szHostName[255];
   nport = htons((u_short) PORTNUM);
   bzero(&serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
@@ -51,10 +92,12 @@ int main(){
   };
   if (bind(s, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
     perror("bind");
+		close(s);
     exit(2);
   };  
-  if (listen(s, 5) < 0){
+  if (listen(s, 10) < 0){
     perror("listen");
+		close(s);
     exit(2);
   };
 	printf("Waiting for connections...\n");
@@ -62,27 +105,33 @@ int main(){
 		size_accept = sizeof(client_addr);
 		bzero(&client_addr, size_accept);
 		size_client = sizeof(client_addr);
+		printf("lol\n");
     if ((client_s = accept(s, (struct sockaddr *)&client_addr, &size_client)) < 0) {
-			if (errno == EINTR){
-				continue;
-			}
 			perror("accept");
-			true_exit(2);
+			wait_fork(nforks);
+			close(s);
+			exit(2);
 		}
 		printf("Connected:\nIP: %lu\nPort: %hu\n=====\n", (unsigned long) client_addr.sin_addr.s_addr, htons(client_addr.sin_port));
 		if ((pid = fork()) < 0){
 			perror("fork");
-			true_exit(2);
+			wait_fork(nforks);
+			close(s);
+			exit(2);
 		}
+		printf("forked\n");
+		nforks++;
 		if (pid == 0){
+/*			close(s);*/
 			/*receiving version and number of methods of auth*/
-			count_r = recv(client_s, &buf, BUF_SIZE, 0);
+			count_r = my_recv(client_s, &buf, BUF_SIZE);
 			printf("%d: Received msg:\nversion: %d, number of auth: %d\nsize: %d===\n", getpid(), buf[0], buf[1], count_r);
-			if (buf[0] != 0x05){
+			if (buf[0] != 0x05 || count_r < 3){
 				buf[0] = 0x05;
 				buf[1] = 0xFF;
-				send(client_s, buf, 2, 0);
-				true_exit(0);
+				my_send(client_s, buf, 2);
+				close(client_s);
+				exit(0);
 			}
 			size = buf[1];
 			/*looking auths*/
@@ -105,57 +154,79 @@ int main(){
 				/*there is.*/
 				buf[0] = 0x05;
 				buf[1] = 0x00;
-				printf("found. \n");
-				send(client_s, buf, 2, 0);
-				printf("sent.\n");
+				printf("found.");
+				my_send(client_s, buf, 2);
+				printf(" sent.\n");
 			}else{
 				printf("Not found. \n");
 				buf[0] = 0x05;
 				buf[1] = 0xFF;
-				send(client_s, buf, 2, 0);
-				true_exit(2);
+				my_send(client_s, buf, 2);
+				close(client_s);
+				exit(0);
 			}
 			printf("%d: Starting connection...\n", getpid());
 			/*connection*/
 			bzero(&dst, sizeof(dst));
-			count_r = recv(client_s, &dst, 4, 0);
+			count_r = my_recv(client_s, &dst, 4);
 			printf("%d: Dst received\nver: %hd, cmd: %hd, rsv: %hd, atype: %d\n", getpid(), dst.ver, dst.cmd, dst.rsv, dst.atype);
 			switch(dst.atype){
 				case 0x01: /*IPv4*/
-					recv(client_s, &dst.addr, BUF_SIZE, 0);
+					my_recv(client_s, &dst.addr, BUF_SIZE);
 					break;
 				case 0x03: /*hostname*/
-					recv(client_s, &hostname_size, 1, 0);
+					my_recv(client_s, &hostname_size, 1);
 					printf("size: %d\n", hostname_size);
-					hostname = (char *) malloc((hostname_size + 1) * sizeof(char));
-					count_r = recv(client_s, hostname, hostname_size, 0);
-					
+					hostname = (char *) malloc(hostname_size * sizeof(char));
+					count_r = my_recv(client_s, hostname, hostname_size);
 					if (count_r != hostname_size){
 						printf("Wrong size of hostname(%d). count_r = %d\n", hostname_size, count_r);
 					} 
-					count_r = recv(client_s, &dst.port, 2, 0);
+					count_r = my_recv(client_s, &dst.port, 2);
 					printf("port: %d\n", htons(dst.port));
 					if (count_r < 2){
 						printf("! No port.");
+						buf[0] = 0x05;
+						buf[1] = 0x07;
+						my_send(client_s, &buf, 2);
+						close(client_s);
+						exit(0);
 					}
-					dst.addr = inet_addr(hostname);
+					if ((hp = gethostbyname(hostname)) == 0){
+						perror("gethostbyname(): ");
+						buf[0] = 0x05;
+						buf[1] = 0x07;
+						my_send(client_s, &buf, 2);
+						close(client_s);
+						exit(2);
+					}
+					bzero(&dst.addr, sizeof(dst.addr));
+					bcopy(hp->h_addr,&dst.addr,hp->h_length);
 					printf("address: %u", (unsigned int) dst.addr);
 					dst.atype = 1;
+					free(hostname);
 					break;
 				case 0x04: /*IPv6*/
-					printf("Sorry, we dont work with IPv6\n");
-					true_exit(0);
-					break;
+					printf("Error: IPv6\n");
+					buf[0] = 0x05;
+					buf[1] = 0x08;
+					my_send(client_s, &buf, 2);
+					close(client_s);
+					exit(0);
 				default:
-				printf("atype error\n");
-				true_exit(0);
+					printf("atype error\n");
+					buf[0] = 0x05;
+					buf[1] = 0x07;
+					my_send(client_s, &buf, 2);
+					close(client_s);
+					exit(0);
 			}
 			printf("%d: Receiving connection:\nver: %hd, cmd: %hd, rsv: %hd\natype: %d\n addr: %u, port: %d\n", 
 							getpid(), dst.ver, dst.cmd, dst.rsv, dst.atype, (unsigned int)(dst.addr), htons(dst.port));
 			if (dst.ver != 0x05 || dst.cmd != 0x01 || dst.atype != 0x01){
 				buf[0] = 0x05;
 				buf[1] = 0x07;
-				send(client_s, &buf, 2, 0);
+				my_send(client_s, &buf, 2);
 				true_exit(0);
 			}
 			printf("%d: Connection received.\n", getpid());
@@ -165,7 +236,10 @@ int main(){
 			bnd.ver = 0x05;
 			bnd.rsv = 0x00;
 			bnd.atype = 0x01;
-			bnd.addr = inet_addr("127.0.0.1");
+			gethostname(szHostName, 255);
+			host_entry = gethostbyname(szHostName);
+			bzero(&bnd.addr, sizeof(bnd.addr));
+			bcopy(host_entry->h_addr, &bnd.addr, host_entry->h_length);
 			bnd.port = htons(PORTNUM);
 			if ((host_s = socket(AF_INET, SOCK_STREAM, 0)) < 0){
 		    perror("socket");
@@ -198,15 +272,16 @@ int main(){
 						 bnd.cmd = 0x01;
 					}
 					printf("%d: Error: bnd.cmd %d\n", getpid(), bnd.cmd);
-					send(client_s, &bnd, sizeof(bnd), 0);
-					true_exit(0);
+					my_send(client_s, &bnd, sizeof(bnd));
+					close(client_s);
+					exit(0);
 				}else{
 					break;
 				}
 			}
 			bnd.cmd = 0x00;
 			printf("%d: Connection accepted!\n", getpid());
-			send(client_s, &bnd, sizeof(bnd), 0);
+			my_send(client_s, &bnd, sizeof(bnd));
 			printf("\n%d: Starting work...\n", getpid());
 			/*connection resolved. Started Work*/
 			
@@ -214,68 +289,56 @@ int main(){
 			while(1){
 				printf("%d: Reading...", getpid());
 				fl = 0;
-				while(1){
+				while ((count_r = my_recv(client_s, &buf, BUF_SIZE)) == BUF_SIZE){	
+					printf("\nFrom client to host=========\n");
+					write(1, buf, count_r);
+					printf("\n=====\n");
+					printf("%d: Read - %d.\n", getpid(), count_r);
+					send(host_s, buf, count_r, 0);
+					printf("Sent to Host.\n");
+					fl = 1;
 					bzero(&buf, BUF_SIZE);
-					if ((count_r = recv(client_s, &buf, BUF_SIZE, 0)) < 0){
-						switch (errno){
-							case EINTR : continue;
-						}
-						perror("recv1");
-						true_exit(2);
-					}
-					
-					if (count_r == BUF_SIZE){
-						printf("\nFrom client to host=========\n%s\n===========\n", buf);
-						write(fd, &buf, count_r);
-						printf("%d: Read - %d.\n", getpid(), count_r);
-						send(host_s, buf, count_r, 0);
-						printf("Sent to Host.\n");
-						fl = 1;
-						continue;
-					}else{
-						printf("\nFrom client to host=========\n%s\n===========\n", buf);
-						write(fd, &buf, count_r);
-						printf("%d: Read - %d.\n", getpid(), count_r);
-						send(host_s, buf, count_r, 0);
-						printf("Sent to Host.\n");
-						break;
-					}
 				}
+				
 				if (fl == 0 && count_r == 0){
 					/*Заканчиваем когда откуда-нибудь получили EOF...*/
-					/*close socket*/
 					printf("EXIT.\n");
-					true_exit(0);
 					break;
+				}else{
+					printf("\nFrom client to host=========\n");
+					write(1, buf, count_r);
+					printf("\n=====\n");
+					printf("%d: Read - %d.\n", getpid(), count_r);
+					my_send(host_s, buf, count_r);
+					printf("Sent to Host.\n");
+					fl = 1;
+					bzero(&buf, BUF_SIZE);
 				}
 				printf("%d: Sent. Receiving.\n", getpid());
 				fl = 0;
-				count_r = BUF_SIZE;
-				bzero(&buf, BUF_SIZE);
-				while ((count_r = recv(host_s, &buf, BUF_SIZE, 0)) == BUF_SIZE){
+				
+				while ((count_r = my_recv(host_s, &buf, BUF_SIZE)) > 0){
 					fl = 1;
 					printf("\nFrom host to client=========\n%s\n===========\n", buf);
 					printf("%d: Read %d.\n", getpid(), count_r);
-					send(client_s, &buf, count_r, 0);
+					my_send(client_s, &buf, count_r);
 					printf("Sent to Client.\n");
 					bzero(&buf, BUF_SIZE);
 				}
+
 				if (fl == 0 && count_r == 0){
 					/*Заканчиваем когда откуда-нибудь получили EOF...*/
 					/*close socket*/
 					printf("EXIT.\n");
-					true_exit(0);
 					break;
-				}else{
-					printf("\nFrom host to client=========\n%s\n===========\n", buf);
-					printf("%d: Read - %d.\n", getpid(), count_r);
-					send(client_s, &buf, count_r, 0);
-					printf("Sent to Client.\n");
 				}
-				close(fd);
-				close(fd1);
 			}
-			
-		}
+			close(client_s);
+			close(host_s);
+			exit(0);
+		}	
   }
+	for (i = 0; i < nforks; i++){
+		wait(NULL);
+	}
 }
