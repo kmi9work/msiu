@@ -96,7 +96,6 @@ class Controller
     </ul>
     )
   end
-  end
 
   # Метод, отвечающий требует ли данный запрос доступа по паролю или нет
   def is_authorized_action?()

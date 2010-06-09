@@ -69,6 +69,17 @@ class FlightController < Controller
     end
     render_template(@action)
   end
+  
+  def show
+    if @cgi.params.has_key?('id') and @cgi.params['id'][0] != ''
+      @item = Flight.find_first(@db, @cgi.params['id'][0])
+      render_template('show')
+    else
+      @message = "Ошибка! Нет id."
+      @link = "controller=Flight&action=list"
+      render_template('error')
+    end
+  end
 
   def FlightController.actions(user)
     result = [[:departure_list, 'Вылетающие рейсы'],
