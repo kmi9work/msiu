@@ -166,7 +166,7 @@ int main(int argc, char **argv){
   printf("%d\n", r_size);
   if (strcmp(argv[3], "1") == 0){
 		filesize = lseek(fid_in, 0, SEEK_END);
-		filesize %= r_size;
+		filesize %= (r_size + 1);
 		lseek(fid_in, 0, SEEK_SET);
 		write(fid_out, &filesize, sizeof(filesize));
     num = 0; encoded_num = 0;
