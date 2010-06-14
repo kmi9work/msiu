@@ -55,15 +55,15 @@ CREATE TABLE crews(
   end
   
   def save(connection)
-    query = ''
+    query = '' 
     params = []
     if self[:id].nil?
-      query = "INSERT INTO #{self.table_name()}(" +
+      query = "INSERT INTO crews(" +
         (@attributes.keys - [:id]).join(', ') + ') VALUES(' +
         (@attributes.keys - [:id]).map{ |k| '?' }.join(', ') + ') RETURNING id'
       params = (@attributes.keys - [:id]).map{ |k| self[k] }
     else
-      query = "UPDATE #{self.table_name()} SET " +
+      query = "UPDATE crews SET " +
         (@attributes.keys - [:id]).map{ |k| "#{k} = ?" }.join(', ') +
         ' WHERE id = ? RETURNING id'
       params = (@attributes.keys - [:id]).map{ |k| self[k] } << self[:id]

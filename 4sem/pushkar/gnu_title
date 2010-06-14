@@ -1,4 +1,4 @@
 set xrange[1:2]
-set title " Laboratory work 1, Kostenchuk M., 8th variant. y'=e^(−(x*x+y*y))*sin(x)"
-plot'euler' title "Euler method" with lines, 'runge_kutt_2' title "Runge-Kutt 2-nd range metnod " with lines, 'runge_kutt_4' title "Runge-Kutt 4-th range method " with lines
+set title "Isaev Egor. Variant 2. y'= ytg(x) + 1/cos(x) x c [1,2]"
+plot 'method1' title "Mthod Elara" with lines,'method2' title "Mthod Runge-Kuta 2-go poriadka" with lines,'method3' title "Mthod Runge-Kuta 4-go poriadka" with lines
 pause -1
