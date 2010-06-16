@@ -1,4 +1,17 @@
 module Helper
+  
+  def flight_select(name, selected)
+    "<select name = '#{name}'>" +
+      Flight.find_all(@db).map do |c|
+        if c[:id].to_i == selected.to_i
+          "<option value = '#{c[:id]}' selected>#{c[:code]}</option>"
+        else
+          "<option value = '#{c[:id]}'>#{c[:code]}</option>"
+        end
+      end.join("\n") +
+      "</select>"
+  end
+  
   def job_select(name, job_id)
     jobs = FlyPersonal.find_all_by_job_id(@db, job_id)
     if jobs.size > 0

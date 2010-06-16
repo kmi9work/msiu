@@ -3,9 +3,8 @@
 require 'cgi'
 require 'controllers/controller'
 require 'convertors'
-require 'time'
 
-DEFAULT_CONTROLLER = 'Flight'
+DEFAULT_CONTROLLER = 'Flights'
 DEFAULT_ACTION = 'departure_list'
 
 def valid_controllers()

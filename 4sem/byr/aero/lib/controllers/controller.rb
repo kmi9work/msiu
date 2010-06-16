@@ -14,7 +14,7 @@ end
 class Controller
   include Helper
 
-  DEFAULT_CONTROLLER = :Flight
+  DEFAULT_CONTROLLER = :Flights
   DEFAULT_ACTION = :list
 
   # Список всех контроллеров
@@ -89,15 +89,6 @@ class Controller
       end.join("\n")
     end.join("\n")
     @menu = '<ul>' + @menu + '</ul>' unless @menu == ''
-    @menu += %(
-    <hr>
-    <ul>
-      <li><a href = 'aero.rb?controller=FlyPersonal&action=list'>Персонал</a></li>
-    </ul>
-    <ul>
-      <li><a href = 'aero.rb?controller=Crew&action=list'>Экипажи</a></li>
-    </ul>
-    )
   end
 
   # Метод, отвечающий требует ли данный запрос доступа по паролю или нет

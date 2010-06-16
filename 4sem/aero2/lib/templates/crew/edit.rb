@@ -3,14 +3,12 @@
 <input type = 'hidden' name = 'controller' value = 'Crew'>
 <input type = 'hidden' name = 'action' value = 'edit'>
 <input type = 'hidden' name = 'is_commit' value = 'true'>
-<input type = 'hidden' name = 'flight_id' value = '#{@cgi.params['flight_id'][0]}'>
 <input type = 'hidden' name = 'item[id]' value = '#{@item[:id]}'>
 <table class = 'list'>
   <caption>
     #{@header}<br>
     <span style = 'color: Red;'>#{@message}</span>
   </caption>
-  <thead>
   <tbody>
     <tr>
       <th>Пилот:</th>
@@ -43,5 +41,6 @@
     </tr>
   </tfoot>
 </table>
+</form>
 "
                        

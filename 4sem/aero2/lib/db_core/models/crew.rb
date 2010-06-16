@@ -1,7 +1,7 @@
 require 'db_core/models/model'
 require 'db_core/models/fly_personal'
 class Crew < Model
-  attr_accessor :pilot, :stuard1, :stuard2, :second_pilot, :mechanic
+  attr_accessor :pilot, :stuard1, :stuard2, :second_pilot, :mechanic, :flight
   def Crew.create_table(connection)
     begin
       connection.do("
@@ -51,6 +51,7 @@ CREATE TABLE crews(
     f.stuard1 = FlyPersonal.find_first(connection,f[:stuard1_id]) unless f[:stuard1_id].nil?
     f.stuard2 = FlyPersonal.find_first(connection,f[:stuard2_id]) unless f[:stuard2_id].nil?
     f.mechanic = FlyPersonal.find_first(connection,f[:mechanic_id]) unless f[:mechanic_id].nil?
+    f.flight = f[:flight_id].nil? ? nil : Flight.find_first(connection, f[:flight_id])
     return f
   end
   
