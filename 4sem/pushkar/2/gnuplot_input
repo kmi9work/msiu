@@ -1,0 +1,4 @@
+set xrange[-2:5]
+set title "Костенчук М.И. (вариант 8) y'*sin(x)=e^(1/y)."
+plot 'method_Euler' title "Euler's Method" with lines, 'method_Runge_Kutt_2' title "Runge-Kutta methods of order 2" with lines, 'method_Runge_Kutt_4' title "Runge-Kutta methods of order 4" with lines 
+pause -1
