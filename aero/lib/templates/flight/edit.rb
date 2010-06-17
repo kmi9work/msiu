@@ -58,6 +58,7 @@
         <input type = 'submit' value = 'Внести изменения'>
         <input type = 'button' value = 'Назад к списку'
                onclick = 'javascript:document.location=\"aero.rb?controller=Flight&action=list\"'>
+        #{select_crews('item[crew_id]', @item[:crew_id])}
       </th>
     </tr>
   </tfoot>

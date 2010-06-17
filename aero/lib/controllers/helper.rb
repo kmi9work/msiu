@@ -1,23 +1,33 @@
 module Helper
-  
-  def flight_select(name, selected)
+  def select_crews(name, selected)
+    "<select name = '#{name}'>" +
+      Crew.find_all(@db).map do |c|
+        if c[:id] == selected
+          "<option value = '#{c[:id]}' selected>#{c[:name]}</option>"
+        else
+          "<option value = '#{c[:id]}'>#{c[:name]}</option>"
+        end
+      end
+    "</select>"
+  end
+  def flight_select(name)
     "<select name = '#{name}'>" +
       Flight.find_all(@db).map do |c|
-        if c[:id].to_i == selected.to_i
-          "<option value = '#{c[:id]}' selected>#{c[:code]}</option>"
-        else
-          "<option value = '#{c[:id]}'>#{c[:code]}</option>"
-        end
+        "<option value = '#{c[:id]}'>#{c[:code]}</option>"
       end.join("\n") +
-      "</select>"
+    "</select>"
   end
   
-  def job_select(name, job_id)
+  def job_select(name, job_id, selected)
     jobs = FlyPersonal.find_all_by_job_id(@db, job_id)
     if jobs.size > 0
       "<select name = '#{name}'>" +
       jobs.map do |c|
-        "<option value = '#{c[:id]}'>#{c[:second_name]}</option>"
+        if c[:id] == selected
+          "<option value = '#{c[:id]}' selected>#{c[:second_name]}</option>"
+        else
+          "<option value = '#{c[:id]}'>#{c[:second_name]}</option>"
+        end
       end.join("\n") +
       "</select>" 
     else

@@ -1,0 +1,6 @@
+Чтобы добавлялся экипаж в флайт.
+У экипажа много флайтов.
+выбор "занят/нет"
+choose_flight (контроллер)
+Flight set_crew ????
+helper -- select_crews('item[crew_id]', id)

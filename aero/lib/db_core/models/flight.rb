@@ -1,8 +1,7 @@
 require 'db_core/models/model'
 
 class Flight < Model
-  attr_reader :company
-  attr_writer :company
+  attr_accessor :company, :crew
 
   def Flight.create_table(connection)
     begin
@@ -17,7 +16,8 @@ CREATE TABLE flights(
   arrival_airport text NOT NULL,
   departure_airport text NOT NULL,
   company_id integer REFERENCES companies(id) NOT NULL,
-  is_departure boolean NOT NULL DEFAULT true
+  is_departure boolean NOT NULL DEFAULT true,
+  crew_id integer REFERENCES crews(id)
 ) WITH OIDS
         ")
       return true
@@ -28,18 +28,8 @@ CREATE TABLE flights(
 
   def initialize(attributes = {})
     @company = nil
-    @attributes = {
-      :id => nil,
-      :code => nil,
-      :arrival_date => nil,
-      :departure_date => nil,
-      :arrival_place => nil,
-      :departure_place => nil,
-      :arrival_airport => nil,
-      :departure_airport => nil,
-      :company_id => nil,
-      :is_departure => nil
-    }
+    @crew = nil
+    @attributes = {}
     attributes.each do |k, v|
       @attributes[k.to_sym] = v unless v.nil? or v == ''
     end
@@ -65,8 +55,8 @@ CREATE TABLE flights(
       r.column_names.each do |c|
         f[c.to_sym] = r[c]
       end
-      f.company = Company.find_first(connection,
-        f[:company_id]) unless f[:company_id].nil?
+      f.company = Company.find_first(connection, f[:company_id]) unless f[:company_id].nil?
+      f.crew = Crew.find_first(connection, f[:crew_id]) unless f[:crew_id].nil?
       res << f
     end
     return res
@@ -81,13 +71,29 @@ CREATE TABLE flights(
     r.column_names.each do |c|
       f[c.to_sym] = r[c]
     end
-    f.company = Company.find_first(connection,
-      f[:company_id]) unless f[:company_id].nil?
+    f.company = Company.find_first(connection, f[:company_id]) unless f[:company_id].nil?
+    f.crew = Crew.find_first(connection, f[:crew_id]) unless f[:crew_id].nil?
     return f
   end
   def destroy(connection)
     unless self[:id].nil?
       connection.do("DELETE FROM #{table_name()} CASCADE WHERE id = ?", self[:id])
     end
+  end
+  def Flight.find_all_by_crew_id(connection, id)
+    query = []
+    res = []
+    query = ["SELECT * FROM flights WHERE crew_id = ? ORDER BY departure_place, departure_date", id]
+    connection.select_all(*query) do |r|
+      f = self.new
+      r.column_names.each do |c|
+        f[c.to_sym] = r[c]
+      end
+      f.company = Company.find_first(connection,
+      f[:company_id]) unless f[:company_id].nil?
+      f.crew = Crew.find_first(connection, f[:crew_id]) unless f[:crew_id].nil?
+      res << f
+    end
+    return res
   end
 end

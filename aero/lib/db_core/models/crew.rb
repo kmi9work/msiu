@@ -1,21 +1,21 @@
 require 'db_core/models/model'
 require 'db_core/models/fly_personal'
 class Crew < Model
-  attr_accessor :pilot, :stuard1, :stuard2, :second_pilot, :mechanic, :flight
+  attr_accessor :pilot, :stuard1, :stuard2, :second_pilot, :mechanic, :flights
   def Crew.create_table(connection)
     begin
       connection.do("
-CREATE TABLE crews(
-  id serial PRIMARY KEY,
-  pilot_id integer REFERENCES fly_personals(id) NOT NULL,
-  stuard1_id integer REFERENCES fly_personals(id) NOT NULL,
-  stuard2_id integer REFERENCES fly_personals(id) NOT NULL,
-  mechanic_id integer REFERENCES fly_personals(id) NOT NULL,
-  second_pilot_id integer REFERENCES fly_personals(id) NOT NULL,
-  is_busy boolean DEFAULT false,
-  flight_id integer
-) WITH OIDS
-        ")
+      CREATE TABLE crews(
+      id serial PRIMARY KEY,
+      name text,
+      pilot_id integer REFERENCES fly_personals(id) NOT NULL,
+      stuard1_id integer REFERENCES fly_personals(id) NOT NULL,
+      stuard2_id integer REFERENCES fly_personals(id) NOT NULL,
+      mechanic_id integer REFERENCES fly_personals(id) NOT NULL,
+      second_pilot_id integer REFERENCES fly_personals(id) NOT NULL,
+      is_busy boolean DEFAULT false
+      ) WITH OIDS
+      ")
       return true
     rescue DBI::ProgrammingError => e
       return false
@@ -23,16 +23,8 @@ CREATE TABLE crews(
   end
 
   def initialize(attributes = {})
-    @attributes = {
-      :id => nil,
-      :pilot_id => nil, 
-      :stuard1_id => nil,
-      :stuard2_id => nil,
-      :mechanic_id => nil,
-      :second_pilot_id => nil,
-      :is_busy => nil,
-      :flight_id => nil
-    }
+    @pilot, @stuard1, @stuard2, @second_pilot, @mechanic, @flights = nil, nil, nil, nil, nil, []
+    @attributes = {}
     attributes.each do |k, v|
       @attributes[k.to_sym] = v unless v.nil? or v == ''
     end
@@ -51,7 +43,8 @@ CREATE TABLE crews(
     f.stuard1 = FlyPersonal.find_first(connection,f[:stuard1_id]) unless f[:stuard1_id].nil?
     f.stuard2 = FlyPersonal.find_first(connection,f[:stuard2_id]) unless f[:stuard2_id].nil?
     f.mechanic = FlyPersonal.find_first(connection,f[:mechanic_id]) unless f[:mechanic_id].nil?
-    f.flight = f[:flight_id].nil? ? nil : Flight.find_first(connection, f[:flight_id])
+    f.flights = []
+    f.flights += (Flight.find_all_by_crew_id(connection, f[:id]) or [])
     return f
   end
 
@@ -69,23 +62,24 @@ CREATE TABLE crews(
     o.stuard1 = FlyPersonal.find_first(connection,o[:stuard1_id]) unless o[:stuard1_id].nil?
     o.stuard2 = FlyPersonal.find_first(connection,o[:stuard2_id]) unless o[:stuard2_id].nil?
     o.mechanic = FlyPersonal.find_first(connection,o[:mechanic_id]) unless o[:mechanic_id].nil?
-    o.flight = o[:flight_id].nil? ? nil : Flight.find_first(connection, o[:flight_id])
+    o.flights = []
+    o.flights += (Flight.find_all_by_crew_id(connection, o[:id]) or [])
     return o
   end
 
-  
+
   def save(connection)
     query = '' 
     params = []
     if self[:id].nil?
       query = "INSERT INTO crews(" +
-        (@attributes.keys - [:id]).join(', ') + ') VALUES(' +
-        (@attributes.keys - [:id]).map{ |k| '?' }.join(', ') + ') RETURNING id'
+      (@attributes.keys - [:id]).join(', ') + ') VALUES(' +
+      (@attributes.keys - [:id]).map{ |k| '?' }.join(', ') + ') RETURNING id'
       params = (@attributes.keys - [:id]).map{ |k| self[k] }
     else
       query = "UPDATE crews SET " +
-        (@attributes.keys - [:id]).map{ |k| "#{k} = ?" }.join(', ') +
-        ' WHERE id = ? RETURNING id'
+      (@attributes.keys - [:id]).map{ |k| "#{k} = ?" }.join(', ') +
+      ' WHERE id = ? RETURNING id'
       params = (@attributes.keys - [:id]).map{ |k| self[k] } << self[:id]
     end
     rs = connection.select_one(query, *params)
@@ -100,12 +94,13 @@ CREATE TABLE crews(
       r.column_names.each do |c|
         o[c.to_sym] = r[c]
       end
-    o.pilot = FlyPersonal.find_first(connection,o[:pilot_id]) unless o[:pilot_id].nil?
-    o.second_pilot = FlyPersonal.find_first(connection,o[:second_pilot_id]) unless o[:second_pilot_id].nil?
-    o.stuard1 = FlyPersonal.find_first(connection,o[:stuard1_id]) unless o[:stuard1_id].nil?
-    o.stuard2 = FlyPersonal.find_first(connection,o[:stuard2_id]) unless o[:stuard2_id].nil?
-    o.mechanic = FlyPersonal.find_first(connection,o[:mechanic_id]) unless o[:mechanic_id].nil?
-    o.flight = o[:flight_id].nil? ? nil : Flight.find_first(connection, o[:flight_id])
+      o.pilot = FlyPersonal.find_first(connection,o[:pilot_id]) unless o[:pilot_id].nil?
+      o.second_pilot = FlyPersonal.find_first(connection,o[:second_pilot_id]) unless o[:second_pilot_id].nil?
+      o.stuard1 = FlyPersonal.find_first(connection,o[:stuard1_id]) unless o[:stuard1_id].nil?
+      o.stuard2 = FlyPersonal.find_first(connection,o[:stuard2_id]) unless o[:stuard2_id].nil?
+      o.mechanic = FlyPersonal.find_first(connection,o[:mechanic_id]) unless o[:mechanic_id].nil?
+      o.flights = []
+      o.flights += (Flight.find_all_by_crew_id(connection, o[:id]) or [])
       res << o
     end
     return res

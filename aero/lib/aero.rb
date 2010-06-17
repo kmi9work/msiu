@@ -3,7 +3,7 @@
 require 'cgi'
 require 'controllers/controller'
 require 'convertors'
-require 'time'
+require 'date'
 
 DEFAULT_CONTROLLER = 'Flight'
 DEFAULT_ACTION = 'departure_list'

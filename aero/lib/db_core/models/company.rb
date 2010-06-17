@@ -22,12 +22,7 @@ CREATE TABLE companies(
   end
 
   def initialize(attributes = {})
-    @attributes = {
-      :id => nil,
-      :name => nil,
-      :code => nil,
-      :description => nil
-    }
+    @attributes = {}
     attributes.each do |k, v|
       @attributes[k] = v
     end

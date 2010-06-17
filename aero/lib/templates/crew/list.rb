@@ -7,6 +7,9 @@ count = 0
   <thead>
     <tr>
       <th>
+        Название
+      </th>
+      <th>
         Пилот
       </th>
       <th>
@@ -34,17 +37,18 @@ count = 0
 if @items != []
 @items.map do |i|
       count += 1
-puts i.pilot.inspect, i.second_pilot.inspect, i.stuard1.inspect, i.stuard2.inspect, i.mechanic.inspect
 "
     <tr class = 'list#{count%2}'>
+      <td><a href='aero.rb?controller=Crew&action=show&id=#{i[:id]}'>#{i[:name]}</a></td>
       <td>#{i.pilot[:second_name]}</td>
       <td>#{i.second_pilot[:second_name]}</td>
       <td>#{i.stuard1[:second_name]}</td>
       <td>#{i.stuard2[:second_name]}</td>
       <td>#{i.mechanic[:second_name]}</td>
       <td>#{i.flight ? i.flight[:code] : 'Нет рейса'}</td>
-      <td><a href='aero.rb?controller=Crew&action=choose_flight&id=#{i[:id]}'>#{i.flight ? 'Редактировать рейс' : 'Назначить рейс'}</a><br>
-<a href='aero.rb?controller=Crew&action=destroy&id=#{i[:id]}'> Удалить</a>
+      <td>
+      <a href='aero.rb?controller=Crew&action=choose_flight&id=#{i[:id]}'>#{i.flight ? 'Редактировать рейс' : 'Назначить рейс'}</a><br>
+      <a href='aero.rb?controller=Crew&action=destroy&id=#{i[:id]}'> Удалить</a>
 </td>
     </tr>
 "

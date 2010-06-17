@@ -3,6 +3,10 @@
   <thead>
   <tbody>
     <tr>
+      <th>Название:</th>
+      <td>#{@item[:name]}</td>
+    </tr>
+    <tr>
       <th>Пилот:</th>
       <td>#{@item.pilot[:second_name]}</td>
     </tr>
@@ -22,7 +26,23 @@
       <th>Бортмеханик:</th>
       <td>#{@item.mechanic[:second_name]}</td>
     </tr>
-
+    <tr>
+      <th>Рейсы:</th>
+      <td>
+        #{
+        @item.flights.map do |flight|
+          "#{flight[:code]}<br>"
+        end.join('\n')
+        }
+      </td>
+    </tr>
+    <tr>
+      <th>Занят?</th>
+      <td>#{@is_busy}</td>
+    </tr>
+    <tr>
+      <th><a href = 'aero?controller=Crew&action=edit&id=#{@item[:id]}'>Редактировать</a></th>
+    </tr>
   </tbody>
   <tfoot>
     <tr>

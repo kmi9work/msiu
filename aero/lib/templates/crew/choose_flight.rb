@@ -12,7 +12,17 @@
 
 <tr>
   <th>Рейс:</th>
-  <td>#{flight_select('item[flight_id]', @selected)}</td>
+  <td>#{flight_select('item[flight_id]')}</td>
+</tr>
+<tr>
+  <th>Рейсы:</th>
+  <td>
+    #{
+    @item.flights.map do |flight|
+      "#{flight[:code]}<br>"
+    end.join('\n')
+    }
+  </td>
 </tr>
 
 </tbody>

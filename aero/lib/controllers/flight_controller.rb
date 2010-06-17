@@ -37,6 +37,18 @@ class FlightController < Controller
         @header = 'Внесение новой информации о рейсах'
         @message = 'Информация о новом рейсе внесена в БД'
       end
+      if @item.crew
+        if @item.crew.flights.size > 0
+          if Date.parse(params['departure_date'][0]) - @item.crew.flights[-1][:arrival_date] < 12
+            @message = 'Между предыдущим рейсом и новым менее 12 часов'
+            return render_template('edit')
+          elsif params['departure_place'][0] != @item.crew.flights[-1][:arrival_place]
+            @message = "Место вылета отличается от места предыдущей посадки.<br>Место посадки: 
+            #{@item.flights[-1][:arrival_place]}<br>Место вылета: #{new_flight[:departure_place]}"
+            return render_template('edit')
+          end
+        end
+      end
       params.each do |k, v|
         @item[k] = v[0] if k != 'id' and v != ''
       end

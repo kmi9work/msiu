@@ -49,7 +49,7 @@
     </tr>
     <tr>
       <td>
-        <a href='aero.rb?controller=Crew&action=show&flight_id=#{@item[:id]}'>Показать экипаж</a>
+        <a href='aero.rb?controller=Crew&action=show_crew_flight&flight_id=#{@item[:id]}'>Показать экипаж</a>
       </td>
     </tr>
   </tbody>

@@ -33,7 +33,28 @@ class CrewController < Controller
       render_template('edit')
     end
   end 
+  
   def show
+    @item = Crew.find_first(@db, @cgi.params['id'][0].to_i)
+    fl = 0
+    @item.flights.each do |flight|
+      fl = 100500 if flight[:arrival_date] < Date.today and flight[:departure_date] > Date.today
+    end
+    if fl == 100500
+      @is_busy = 'Экипаж занят'
+    else
+      @is_busy = 'Экипаж свободен'
+    end
+    if @item.nil?
+      @message = "no such crew"
+      @link = 'controller=Crew&action=list'
+      render_template('error')
+    else
+      render_template('show')
+    end
+  end
+  
+  def show_crew_of_flight
     if @cgi.params.has_key?('flight_id') 
       @item = Crew.find_by_flight_id(@db, @cgi.params['flight_id'][0].to_i)
       if @item.nil?
@@ -52,7 +73,7 @@ class CrewController < Controller
     @items = Crew.find_all(@db)
     render_template('list')
   end
-  
+
   def destroy
     if @cgi.params.has_key?('id') and @cgi.params['id'][0] != ''
       @item = Crew.find_first(@db, @cgi.params['id'][0])
@@ -69,28 +90,29 @@ class CrewController < Controller
   def choose_flight
     if @cgi.params.has_key?('is_commit')
       if @cgi.params.has_key?('id')
-	@id = @cgi.params['id'][0].to_i 
+        @id = @cgi.params['id'][0].to_i 
         @item = Crew.find_first(@db, @cgi.params['id'][0].to_i)
         params = filter_for_params
-        if @item[:flight_id]
-          new_flight = Flight.find_first(@db, params['flight_id'][0].to_i)
-          if new_flight[:departure_date] - @item.flight[:arrival_date] < 12
+        new_flight = Flight.find_first(@db, params['flight_id'][0].to_i)
+        if @item.flights.size > 0
+          if new_flight[:departure_date] - @item.flights[-1][:arrival_date] < 12
             @message = 'Между предыдущим рейсом и новым менее 12 часов'
             render_template('choose_flight')
-          elsif new_flight[:departure_place] != @item.flight[:arrival_place]
-            @message = "Место вылета отличается от места предыдущей посадки.<br>Место посадки: #{@item.flight[:arrival_place]}<br>Место вылета: #{new_flight[:departure_place]}"
+          elsif new_flight[:departure_place] != @item.flights[-1][:arrival_place]
+            @message = "Место вылета отличается от места предыдущей посадки.<br>Место посадки: 
+            #{@item.flights[-1][:arrival_place]}<br>Место вылета: #{new_flight[:departure_place]}"
             render_template('choose_flight')
           else
-            @item[:flight_id] = params['flight_id'][0]
-            @item.save(@db)
+            new_flight[:crew_id] = @item[:id]
+            new_flight.save(@db)
             @message = 'Рейс назначен'
             render_template('choose_flight')
           end
-	else
-            @item[:flight_id] = params['flight_id'][0]
-            @item.save(@db)
-            @message = 'Рейс назначен'
-            render_template('choose_flight')
+        else
+          new_flight[:crew_id] = @item[:id]
+          new_flight.save(@db)
+          @message = 'Рейс назначен'
+          render_template('choose_flight')
         end
       else
         @message = "error: No id"
@@ -100,9 +122,8 @@ class CrewController < Controller
     else
       @id = @cgi.params['id'][0].to_i
       @item = Crew.find_first(@db, @id)
-      if @item[:flight_id]
-        @selected = @item[:flight_id] 
-        @message = 'Редактирование рейса для экипажа'
+      if @item.flights.size > 0
+        @message = 'Добавление рейса для экипажа'
       else
         @message = 'Назначение рейса для экипажа'
       end

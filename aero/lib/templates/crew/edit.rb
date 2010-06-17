@@ -11,24 +11,28 @@
   </caption>
   <tbody>
     <tr>
+      <th>Название экипажа:</th>
+      <td><input type = 'text' name = 'item[name]' value = '#{@item ? @item[:name] : ""}' size = '30'></td>
+    </tr>
+    <tr>
       <th>Пилот:</th>
-      <td>#{job_select('item[pilot_id]', 0)}</td>
+      <td>#{job_select('item[pilot_id]', 0, (@item and @item.pilot) ? @item.pilot[:id] : nil)}</td>
     </tr>
     <tr>
       <th>Стюард:</th>
-      <td>#{job_select('item[stuard1_id]', 1)}</td>
+      <td>#{job_select('item[stuard1_id]', 1, (@item and @item.stuard1) ? @item.stuard1[:id] : nil)}</td>
     </tr>
     <tr>
       <th>Второй Стюард:</th>
-      <td>#{job_select('item[stuard2_id]', 1)}</td>
+      <td>#{job_select('item[stuard2_id]', 1, (@item and @item.stuard2) ? @item.stuard2[:id] : nil)}</td>
     </tr>
     <tr>
       <th>Бортмеханик:</th>
-      <td>#{job_select('item[mechanic_id]', 2)}</td>
+      <td>#{job_select('item[mechanic_id]', 2, (@item and @item.mechanic) ? @item.mechanic[:id] : nil)}</td>
     </tr>
     <tr>
       <th>Второй пилот:</th>
-      <td>#{job_select('item[second_pilot_id]', 3)}</td>
+      <td>#{job_select('item[second_pilot_id]', 3, (@item and @item.second_pilot) ? @item.second_pilot[:id] : nil)}</td>
     </tr>
   </tbody>
   <tfoot>
