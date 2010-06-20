@@ -1,0 +1,13 @@
+<% form_tag(:action => :produce_commit, :id => @item.id) do %>
+<table class = "edit">
+  <caption>Укажите причину</caption>
+  <tbody>
+    <tr>
+    <th><%= text_field_tag('reason', '', :size => 20)  %></th>
+      <td colspan = "2">
+        <%= submit_tag('OK')  %>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<% end %>

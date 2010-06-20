@@ -1,0 +1,30 @@
+<% form_tag({:action => :list}, {:name => 'items_form'}) do %>
+<TABLE class = "list">
+  <CAPTION>
+    Списанные товары:
+  </CAPTION>
+  <% if @items.size == 0 %>
+    <%=  empty_list() %>
+  <% else %>
+    <THEAD>
+      <TR>
+        <TH>Название</TH>
+
+        <% if @inline_actions.size > 0  %>
+        <TH>Действия</TH>  
+   <TH>Причина:</TH>
+        <% end %>
+      </TR>
+    </THEAD>
+    <TBODY>
+      <% @items.each do |i| %>
+      <TR>
+        <TD><%= i.name %></TD>
+      <TD><%= i.reason() %></TD>
+        <%= inline_menu(i) %>
+      </TR>
+      <% end %>
+    </TBODY>
+  <% end %>
+</TABLE>
+<% end %>

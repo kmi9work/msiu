@@ -1,0 +1,72 @@
+<table class = "edit">
+  <caption>Просмотр товара</caption>
+  <thead>
+    <tr>
+      <th colspan = "2">
+        <div class = "button-link">
+          <span>
+            <%= 
+            if @item.kind_of?(Discounted)
+              link_to('Вернуться в список товаров', :action => :list)
+            else 
+              link_to('Вернуться в список товаров', :action => :list, :catalogue_id => @item.catalogue_id)
+            end %>
+          </span>
+        </div>
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Название товара:</th>
+      <td><%= @item.name %></td>
+    </tr>
+    <tr>
+      <th>Размеры товара:</th>
+      <td>
+        <%= @item.size_x %> мм X
+        <%= @item.size_y %> мм X
+        <%= @item.size_z %> мм
+      </td>
+    </tr>
+    <tr>
+      <th>Вес товара:</th>
+      <td><%= @item.weight %> кг</td>
+    </tr>
+    <% @item.prms.each do |k, v| %>
+    <tr>
+      <th><%= k %></th>
+      <td><%= v %></td>
+    </tr>
+    <% end %>
+    <tr>
+      <th>Каталог:</th>
+      <td><%= @item.catalogue_name() %></td>
+    </tr>
+    <tr>
+      <th>Цена:</th>
+      <td>
+        <%= 
+        if @item.kind_of?(Discounted)
+          @item.price
+        else
+          @item.price
+        end
+        %>
+      </td>
+    </tr>
+    <% if @item.kind_of?(Discounted) %>
+    <tr>
+      <td colspan="2"><font color="red">Товар уценён.</font></th>
+    </tr>
+    <tr>
+      <th>Причина поломки:</th>
+      <td><%= @item.reason %></td>
+    </tr>
+    <tr>
+      <th>Характер повреждений:</th>
+      <td><%= @item.sort %></td>
+    </tr>
+    <% end %>
+  </tbody>
+</table>

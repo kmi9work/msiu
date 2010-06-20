@@ -1,0 +1,14 @@
+<% form_tag(:action => :discount_commit, :id => @item.id) do %>
+<table class = "edit">
+  <caption>Укажите причину поломки и характер повреждений</caption>
+  <tbody>
+    <tr>
+    <td>Причина: <%= text_field_tag('reason', '', :size => 20)  %></td>
+    <td>Характер: <%= text_field_tag('sort', '', :size => 20)  %></td>
+    </tr>
+    <td colspan = "2">
+      <%= submit_tag('OK')  %>
+    </td>
+  </tbody>
+</table>
+<% end %>
